@@ -3,7 +3,7 @@
 ### Short description:
 Alarme Covid - Rastreio de contactos e deteção de concentrações de pessoas.
 
-### Members / Maintainers
+### Members / Maintainers:
 
 
 |      Name     | Number |
@@ -16,4 +16,4 @@ Alarme Covid - Rastreio de contactos e deteção de concentrações de pessoas.
 
 <br>
 
->**University of Minho, Software Engineering Masters (4nd year)**
+>**University of Minho, Software Engineering Masters (4rd year)**
