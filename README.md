@@ -1,4 +1,6 @@
 # Distributed-Systems-Paradigms
+
+### Short description:
 Alarme Covid - Rastreio de contactos e deteção de concentrações de pessoas.
 
 ### Members / Maintainers
