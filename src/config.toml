@@ -1,0 +1,7 @@
+[ports]
+"FRONTEND"               = 10000
+"PULL_BACKEND_DISTRITAL" = 10100
+"PUB_BACKEND_DISTRITAL"  = 10200
+[local]
+"Braga" = 1
+"Porto" = 2

@@ -1,15 +1,24 @@
 .PHONY: *.erl
-RUN_ARGS = erl -pa _build/default/lib/chumak/ebin
+
+BEAMS := $(shell find _build -name "ebin" | tr '\n' ' ')
+FRONTEND = _build/frontend/ebin
+
+RUN_ARGS = erl -pa ${BEAMS}
 
 # Compile all erlang modules
-
 all: clean *.erl
 
 *.erl:
-	erlc $@
+	@echo "Compiling $@..."
+	@erlc $@
+	$(eval NAME := $(shell basename $@ .erl)) 
+	@cp ${NAME}.beam ${FRONTEND}
 
-run: all
+run:
+	@echo "Running beams ${BEAMS}..."
 	${RUN_ARGS}
 
 clean:
-	rm -f *.beam *.dump
+	@echo "Cleaning build files..."
+	@rm -f ${FRONTEND}/*.beam *.dump
+	@mkdir -p ${FRONTEND}
