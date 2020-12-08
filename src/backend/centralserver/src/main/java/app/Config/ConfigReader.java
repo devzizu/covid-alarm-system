@@ -1,3 +1,6 @@
+
+package app.Config;
+
 import com.moandjiezana.toml.Toml;
 
 import java.io.File;
