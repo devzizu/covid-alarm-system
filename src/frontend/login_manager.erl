@@ -1,5 +1,5 @@
 -module(login_manager).
--export([start/0, create_account/3, close_account/2, login/2, rpc/1, loop/1]).
+-export([start/0, create_account/3, close_account/2, login/2, rpc/1, loop/1, get_residencia/1]).
 
 %MAP -> {[key = Username], [value = {password, is_logged ?, Residencia}]
 

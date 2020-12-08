@@ -12,7 +12,7 @@ all: clean *.erl
 	@echo "Compiling $@..."
 	@erlc $@
 	$(eval NAME := $(shell basename $@ .erl)) 
-	@cp ${NAME}.beam ${FRONTEND}
+	@mv ${NAME}.beam ${FRONTEND}
 
 run:
 	@echo "Running beams ${BEAMS}..."

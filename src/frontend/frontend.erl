@@ -1,35 +1,48 @@
 -module(frontend).
--export([start_frontend/0, acceptor/1, start_zeromq_servers/1]).
+-export([start_frontend/0, acceptor/2, handle_requests_push/3]).
+
+-define(CONFIG_FILE, "../config.toml").
 
 start_frontend() ->
-    {ok, LSock} = gen_tcp:listen(FRONTEND_PORT, [{active, once}, {packet, line},
-                                        {reuseaddr, true}]),
+    io:format("Reading configuration file ~s.~n", [?CONFIG_FILE]),
+    % read configuration file    
+    {ok, Configuration} = toml:read_file(?CONFIG_FILE),
+    {integer, FE_PORT} = toml:get_value(["ports"], "FRONTEND", Configuration),
+    % bind listen port to the frontend server
+    io:format("Frontend is listenning on port: ~p.~n", [FE_PORT]),
+    {ok, LSock} = gen_tcp:listen(FE_PORT, [{active, once}, {packet, line},
+                                           {reuseaddr, true}]),
+    % start chumak zeromq
     application:start(chumak),
+    % start login manager
     login_manager:start(),
-    spawn(fun() -> acceptor(LSock) end),
+    io:format("Login manager and Chumak zeromq started.~n", []),
+    spawn(fun() -> acceptor(LSock, Configuration) end),
     ok.
 
-acceptor(LSock) ->
-    {ok, Socket} = gen_tcp:accept(LSock),
-    spawn(fun() -> acceptor(LSock) end),
-    {ok, Username} = enter_app(Socket),
-    start_zeromq_servers(Username),
-    handle_client_socket(Socket, Username).
-
-handle_client_socket(Socket, User) ->
-    inet:setopts(Socket, [{active, once}]),
-    receive
-        % mandar servidores destritais zeromq
-        {tcp, _, Data} ->  
-            io:format("~p~n",[Data]),
-            send_backend(),
-            handle_client_socket(Socket, User);
-        % logout
-        {tcp_closed, _} ->
-            io:format("~p~n",["closed"]);
-        % logout
-        {tcp_error, _, _} ->
-            io:format("~p~n",["error"])
+acceptor(LSock, Configuration) ->
+    {ok, ClientSocket} = gen_tcp:accept(LSock),
+    spawn(fun() -> acceptor(LSock, Configuration) end),
+    io:format("\tAccepted new client...~n", []),
+    {ok, Username} = enter_app(ClientSocket),
+    io:format("\tClient ~p logged in...~n", [Username]),
+    %Init comunication with central server -> Response Push port and xSub port
+    io:format("\tStarting zeromq servers (req, push, xpub)...~n", []),
+    % Get ports from REQ socket: central server
+    {integer, CS_PORT} = toml:get_value(["ports"], "CENTRAL_SERVER", Configuration),
+    case zeromq_servers:request_ports_central(ClientSocket, CS_PORT, Username) of
+        {ok, PUSH_PORT, XPUB_PORT} -> 
+           % Connection to push district server    
+            %Socket_Push = zeromq_servers:start_zeromq_push(PUSH_PORT, Username),
+            % Connection to push xpub dynamic server    
+            %Socket_SUB = zeromq_servers:start_zeromq_sub(XPUB_PORT, Username),
+            % Communication between client and front-end server & Front-end and district server
+            io:format("\tHandler for socket pushs started...~n", []),
+            %spawn(fun() -> handle_requests_push(ClientSocket, Socket_Push, Username) end),
+            io:format("\tHandler for socket subs started...~n", []);
+            %spawn(fun() -> zeromq_servers:receive_zeromq_sub(ClientSocket, Socket_SUB) end);
+        {error} ->
+            io:format("\tCannot start servers!~n", [])
     end.
 
 enter_app(Socket) ->
@@ -62,26 +75,17 @@ enter_app(Socket) ->
         {ok,_} -> UserLogged
     end.
 
-
-send_backend() ->
-true.
-
-start_zeromq_push() ->
-    {ok, Socket} = chumak:socket(push),
-    case chumak:connect(Socket, tcp, "localhost", ZMQ_PUSH_PORT) of
-        {ok, _BindPid} ->
-            io:format("[~p] Binding OK with Pid: ~p\n", [Username, Socket]);
-        {error, Reason} ->
-            io:format("[~p] Connection Failed for this reason: (omitted)\n", [Username]);
-        X ->
-            io:format("[~p] Unhandled reply for bind ~p \n", [X])
-    end,
-    Socket.
-
-start_zeromq_sub() ->
-
-
-start_zeromq_servers(Username) ->
-    {ok, Residencia} = login_manager:get_residencia(Username),
-
-    .
+handle_requests_push(ClientSocket, Socket_Push, Username) ->
+    inet:setopts(ClientSocket, [{active, once}]),
+    receive
+        % mandar servidores destritais zeromq
+        {tcp, _, OperationData} ->  
+            zeromq_servers:send_backend(Username, Socket_Push, OperationData),
+            handle_requests_push(ClientSocket, Socket_Push, Username);
+        % logout
+        {tcp_closed, _} ->
+            io:format("~s~n",["closed"]);
+        % logout
+        {tcp_error, _, _} ->
+            io:format("~s~n",["error"])
+    end.

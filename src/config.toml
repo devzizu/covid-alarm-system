@@ -1,12 +1,11 @@
 [ports]
-"FRONTEND"               = 10000
-"PULL_BACKEND_DISTRITAL" = 10100
-"PUB_BACKEND_DISTRITAL"  = 10200
+"FRONTEND"         = 10000
+"CENTRAL_SERVER"   = 10100
 [local]
 "Braga"            = 1
 "Aveiro"           = 2
 "Beja"             = 3
-"Bragança"         = 4
+"Braganca"         = 4
 "Castelo Branco"   = 5
 "Coimbra"          = 6
 "Evora"            = 7
