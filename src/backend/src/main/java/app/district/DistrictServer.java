@@ -24,7 +24,7 @@ public class DistrictServer {
             //"centralserver_ok(error)_XSUBPORT"
             String[] campos = msg.split("_");
             if(campos[1].equals("ok")){
-                return campos[2];
+                return campos[3];
             }
             else return null;
         }
@@ -40,14 +40,19 @@ public class DistrictServer {
                 ZMQ.Socket socket_req = context.createSocket(SocketType.REQ))
             {
                 String pubPort = callCentral(socket_req);
+                System.out.println("[Distrital] Porta Pub: " + pubPort);
 
-                String port = config.getPort("local", local);
+                int port = Integer.parseInt(config.getPort("local", local)) + Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER"));
+
                 socket_pull.bind("tcp://*:" + port);
+                System.out.println("[Distrital] Porta Pull: " + port);
+
 
                 socket_pub.bind("tcp://*:" + pubPort);
 
                 while(true) {
                         byte[] msg = socket_pull.recv();
+                        
                         System.out.println("broadcasting: " + new String(msg));
                         socket_pub.send(msg);
                 }

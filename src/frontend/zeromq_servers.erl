@@ -3,7 +3,7 @@
 
 request_ports_central(ClientSocket, CS_PORT, Username) ->
     % create socket type REQ for central server requests
-    {ok, Socket} = chumak:socket(req, "central_server"),
+    {ok, Socket} = chumak:socket(req),
     % connect to central server port: CS_PORT
     case chumak:connect(Socket, tcp, "localhost", CS_PORT) of
         {ok, _} ->
@@ -26,7 +26,7 @@ request_ports_central(ClientSocket, CS_PORT, Username) ->
         4 ->
             ["centralserver", "ok", ZMQ_PUSH_PORT, ZMQ_XPUB_PORT] = Res,
                 % returning received ports
-                {ok, ZMQ_PUSH_PORT, ZMQ_XPUB_PORT};
+                {ok, list_to_integer(ZMQ_PUSH_PORT), list_to_integer(ZMQ_XPUB_PORT)};
         2 ->
             ["centralserver", "error"] = Res,
                 gen_tcp:send(ClientSocket, "Nenhum servidor disponível, tente mais tarde."),

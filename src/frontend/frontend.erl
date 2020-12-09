@@ -48,7 +48,6 @@ acceptor(LSock, Configuration) ->
 enter_app(Socket) ->
     receive
         {tcp, _, Data} ->
-            inet:setopts(Socket, [{active, once}]),
             Tokens = string:tokens(Data," \r\n"),
             case length(Tokens) of
                 % [login, <user>, <pass>]
@@ -69,6 +68,7 @@ enter_app(Socket) ->
             end
     end,
     Msg = lists:flatten(io_lib:format("~p\n", [UserLogged])),
+    inet:setopts(Socket, [{active, once}]),
     gen_tcp:send(Socket, Msg),
     case UserLogged of
         {null,_} -> enter_app(Socket);
@@ -80,9 +80,11 @@ handle_requests_push(ClientSocket, Socket_Push, Username) ->
     receive
         % mandar servidores destritais zeromq
         {tcp, _, OperationData} ->  
+            inet:setopts(ClientSocket, [{active, once}]),
+            io:format("Sending operation to backend: ~p~n", [OperationData]),
             zeromq_servers:send_backend(Username, Socket_Push, OperationData),
             handle_requests_push(ClientSocket, Socket_Push, Username);
-        % logout
+        % logout    
         {tcp_closed, _} ->
             io:format("~s~n",["closed"]);
         % logout

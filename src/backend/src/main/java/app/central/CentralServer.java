@@ -12,12 +12,22 @@ public class CentralServer {
         public static ConfigReader config = new ConfigReader();
 
         public static String parseMsg(String data){
-            //cliente_*username*_*residencia*
+            //cliente_username_residencia
+            //district_residencia
             String res = "";
             String[] parts = data.split("_");
-            String local = parts[2];
-            String port_local = config.getPort("local", local);
-            
+            String local;
+            String port_local = "";
+            if(parts[0].equals("cliente")){
+                local = parts[2];
+                port_local = config.getPort("local", local);
+                
+            }
+            else if(parts[0].equals("district")){
+                local = parts[1];
+                port_local = config.getPort("local", local);
+
+            }
             //centralserver_ok_PORTAPUSH_PORTAXPUB
             //centralserver_error
             if(port_local == null){
@@ -30,7 +40,7 @@ public class CentralServer {
 
                 port_final += Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER"));
 
-                res = "centralserver_ok_" + port_final + "_20000";
+                res = "centralserver_ok_" + port_final + "_10050";
             }
 
             return res;
