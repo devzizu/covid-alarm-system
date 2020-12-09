@@ -33,14 +33,14 @@ acceptor(LSock, Configuration) ->
     case zeromq_servers:request_ports_central(ClientSocket, CS_PORT, Username) of
         {ok, PUSH_PORT, XPUB_PORT} -> 
            % Connection to push district server    
-            %Socket_Push = zeromq_servers:start_zeromq_push(PUSH_PORT, Username),
+            Socket_Push = zeromq_servers:start_zeromq_push(PUSH_PORT, Username),
             % Connection to push xpub dynamic server    
-            %Socket_SUB = zeromq_servers:start_zeromq_sub(XPUB_PORT, Username),
+            Socket_SUB = zeromq_servers:start_zeromq_sub(XPUB_PORT, Username),
             % Communication between client and front-end server & Front-end and district server
             io:format("\tHandler for socket pushs started...~n", []),
-            %spawn(fun() -> handle_requests_push(ClientSocket, Socket_Push, Username) end),
-            io:format("\tHandler for socket subs started...~n", []);
-            %spawn(fun() -> zeromq_servers:receive_zeromq_sub(ClientSocket, Socket_SUB) end);
+            spawn(fun() -> handle_requests_push(ClientSocket, Socket_Push, Username) end),
+            io:format("\tHandler for socket subs started...~n", []),
+            spawn(fun() -> zeromq_servers:receive_zeromq_sub(ClientSocket, Socket_SUB) end);
         {error} ->
             io:format("\tCannot start servers!~n", [])
     end.

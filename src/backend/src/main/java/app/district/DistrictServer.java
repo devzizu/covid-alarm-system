@@ -1,10 +1,11 @@
-package app;
+
+package app.district;
 
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
-import app.Config.ConfigReader;
+import app.ConfigReader;
 
 public class DistrictServer {
 

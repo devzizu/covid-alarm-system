@@ -1,5 +1,5 @@
 
-package app.Config;
+package app;
 
 import com.moandjiezana.toml.Toml;
 
@@ -14,7 +14,7 @@ public class ConfigReader {
 
     public ConfigReader(){
 
-        File myObj = new File("../../config.toml");
+        File myObj = new File("../config.toml");
 
         Toml toml = new Toml().read(myObj);
         
