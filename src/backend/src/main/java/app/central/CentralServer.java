@@ -41,18 +41,14 @@ public class CentralServer {
                 port_local = config.getPort("local", local);
 
                 if(!district_servers.containsKey(local)){
+
                     port_final = Integer.parseInt(port_local) + Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER"));
+                    district_servers.put(local, new ArrayList<>(Arrays.asList(port_final)));
+
                 }else{
                     int newNumberPort = Integer.parseInt(port_local) * (1 + district_servers.get(local).size());
                     port_final = newNumberPort + Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER")); 
-                }
-
-                if(district_servers.containsKey(local)){
                     district_servers.get(local).add(port_final);
-                }else{
-                    List<Integer> ldist = new ArrayList<>();
-                    ldist.add(port_final);
-                    district_servers.put(local, ldist);
                 }
             }
             //centralserver_ok_PORTAPUSH_PORTAXPUB
