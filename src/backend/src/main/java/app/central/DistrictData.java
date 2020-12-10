@@ -1,4 +1,4 @@
-
+package app.central;
 
 public class DistrictData {
 
@@ -15,6 +15,6 @@ public class DistrictData {
     }
 
     public int getPubPort() {
-        return this.pull_port;
+        return this.pub_port;
     }
 }

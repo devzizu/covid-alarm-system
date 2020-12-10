@@ -14,9 +14,9 @@ public class CentralServer {
         //Map com key = Local referente ao district server
         //Value = Lista de portas a ser usadas para os diversos district server
         //A Porta é referente ao PULL
-        config = new ConfigReader();
         static Map<String, RoundRobinDistrict> localServers = new HashMap<>();
 
+        static ConfigReader config = new ConfigReader();
         static int NOT_DEFINED_PUB = 10999;
         static int NUM_DISTRICTS   =  Integer.parseInt(config.getNumDistricts());
         
@@ -52,7 +52,7 @@ public class CentralServer {
 
                 //district_Porto
 
-                port_local = config.getPort("local", local);
+                String port_local = config.getPort("local", local);
 
                 int generatedPullPort = -1; //not defined
 
@@ -65,7 +65,7 @@ public class CentralServer {
                 
                 } else {
                     
-                    generatedPullPort = Integer.parseInt(port_local) + (NUM_DISTRICTS * district_servers.get(local).size()) + Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER")); 
+                    generatedPullPort = Integer.parseInt(port_local) + (NUM_DISTRICTS * localServers.get(local).sizeL()) + Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER")); 
                     localServers.get(local).appendDistrictServer(new DistrictData(
                         generatedPullPort, NOT_DEFINED_PUB
                     ));

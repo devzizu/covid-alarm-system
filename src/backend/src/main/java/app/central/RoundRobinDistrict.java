@@ -1,6 +1,10 @@
+package app.central;
+
 import java.util.List;
 
-public static class RoundRobinDistrict {
+import jdk.nashorn.internal.ir.ReturnNode;
+
+public class RoundRobinDistrict {
 
     private int current_server;
     private List<DistrictData> district_servers;  
@@ -18,12 +22,16 @@ public static class RoundRobinDistrict {
         return this.district_servers;
     }
 
-    public getNextDistrictServer() {
+    public int sizeL(){
+        return this.district_servers.size();
+    }
+
+    public DistrictData getNextDistrictServer() {
         int next_server = (this.current_server+1)%district_servers.size();
         return district_servers.get(next_server);
     }
 
-    public appendDistrictServer(DistrictData d) {
+    public void appendDistrictServer(DistrictData d) {
         this.district_servers.add(d);
     }
 

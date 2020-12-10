@@ -41,10 +41,7 @@ public class ConfigReader {
     public String getNumDistricts(){
 
         String n = null;
-        if(key_principal.equals("default")){
-
             n = (String) defDist.get("\"NR_DISTRICTS\"").toString();
-        }
         return n;
     }
 
