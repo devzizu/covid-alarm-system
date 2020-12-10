@@ -37,10 +37,11 @@ acceptor(LSock, Configuration) ->
             % Connection to push xpub dynamic server    
             Socket_SUB = zeromq_servers:start_zeromq_sub(XPUB_PORT, Username),
             % Communication between client and front-end server & Front-end and district server
-            io:format("\tHandler for socket pushs started...~n", []),
-            spawn(fun() -> handle_requests_push(ClientSocket, Socket_Push, Username) end),
             io:format("\tHandler for socket subs started...~n", []),
-            spawn(fun() -> zeromq_servers:receive_zeromq_sub(ClientSocket, Socket_SUB) end);
+            spawn(fun() -> zeromq_servers:receive_zeromq_sub(ClientSocket, Socket_SUB) end),
+            io:format("\tHandler for socket pushs started...~n", []),
+            handle_requests_push(ClientSocket, Socket_Push, Username);
+            
         {error} ->
             io:format("\tCannot start servers!~n", [])
     end.
@@ -48,6 +49,7 @@ acceptor(LSock, Configuration) ->
 enter_app(Socket) ->
     receive
         {tcp, _, Data} ->
+            inet:setopts(Socket, [{active, once}]),
             Tokens = string:tokens(Data," \r\n"),
             case length(Tokens) of
                 % [login, <user>, <pass>]
@@ -68,7 +70,6 @@ enter_app(Socket) ->
             end
     end,
     Msg = lists:flatten(io_lib:format("~p\n", [UserLogged])),
-    inet:setopts(Socket, [{active, once}]),
     gen_tcp:send(Socket, Msg),
     case UserLogged of
         {null,_} -> enter_app(Socket);
@@ -76,7 +77,6 @@ enter_app(Socket) ->
     end.
 
 handle_requests_push(ClientSocket, Socket_Push, Username) ->
-    inet:setopts(ClientSocket, [{active, once}]),
     receive
         % mandar servidores destritais zeromq
         {tcp, _, OperationData} ->  
