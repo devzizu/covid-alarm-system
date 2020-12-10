@@ -7,7 +7,16 @@ import org.zeromq.ZMQ;
 
 import app.ConfigReader;
 
+import java.util.*;
+
 public class CentralServer {
+
+        //Map com key = Local referente ao district server
+        //Value = Lista de portas a ser usadas para os diversos district server
+        //A Porta é referente ao PULL
+        static Map<String, List<Integer>> district_servers = new HashMap<>();
+
+        static int nDistricts = 18;
 
         public static ConfigReader config = new ConfigReader();
 
@@ -18,15 +27,33 @@ public class CentralServer {
             String[] parts = data.split("_");
             String local;
             String port_local = "";
+            int port_final = 0;
             if(parts[0].equals("cliente")){
                 local = parts[2];
                 port_local = config.getPort("local", local);
-                
+
+                port_final = Integer.parseInt(port_local) + Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER"));
+
             }
             else if(parts[0].equals("district")){
                 local = parts[1];
+
                 port_local = config.getPort("local", local);
 
+                if(!district_servers.containsKey(local)){
+                    port_final = Integer.parseInt(port_local) + Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER"));
+                }else{
+                    int newNumberPort = Integer.parseInt(port_local) * (1 + district_servers.get(local).size());
+                    port_final = newNumberPort + Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER")); 
+                }
+
+                if(district_servers.containsKey(local)){
+                    district_servers.get(local).add(port_final);
+                }else{
+                    List<Integer> ldist = new ArrayList<>();
+                    ldist.add(port_final);
+                    district_servers.put(local, ldist);
+                }
             }
             //centralserver_ok_PORTAPUSH_PORTAXPUB
             //centralserver_error
@@ -35,10 +62,6 @@ public class CentralServer {
                 res = "centralserver_error";
             }
             else{
-
-                int port_final = Integer.parseInt(port_local);
-
-                port_final += Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER"));
 
                 res = "centralserver_ok_" + port_final + "_10050";
             }
