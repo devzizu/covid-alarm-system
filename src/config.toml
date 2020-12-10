@@ -1,3 +1,5 @@
+[default]
+"NR_DISTRICTS"     = 18
 [ports]
 "FRONTEND"         = 10000
 "CENTRAL_SERVER"   = 10100

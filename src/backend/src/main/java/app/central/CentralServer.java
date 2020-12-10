@@ -14,55 +14,67 @@ public class CentralServer {
         //Map com key = Local referente ao district server
         //Value = Lista de portas a ser usadas para os diversos district server
         //A Porta é referente ao PULL
-        static Map<String, List<Integer>> district_servers = new HashMap<>();
+        config = new ConfigReader();
+        static Map<String, RoundRobinDistrict> localServers = new HashMap<>();
 
-        static int nDistricts = 18;
-
-        public static ConfigReader config = new ConfigReader();
+        static int NOT_DEFINED_PUB = 10999;
+        static int NUM_DISTRICTS   =  Integer.parseInt(config.getNumDistricts());
+        
 
         public static String parseMsg(String data){
+            
             //cliente_username_residencia
             //district_residencia
-            String res = "";
+            
+            String finalResponse = "";
             String[] parts = data.split("_");
             String local;
-            String port_local = "";
-            int port_final = 0;
-            if(parts[0].equals("cliente")){
+            String responseHeader = "centralserver";
+            
+            //client requests ports to connect
+            if(parts[0].equals("cliente")) {
+                
                 local = parts[2];
-                port_local = config.getPort("local", local);
 
-                port_final = Integer.parseInt(port_local) + Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER"));
+                //if there is district servers available, round robin in them
+                if (localServers.containsKey(local)) {
 
-            }
-            else if(parts[0].equals("district")){
+                    RoundRobinDistrict rrd = localServers.get(local);
+                    DistrictData choosenDistrict = rrd.getNextDistrictServer();
+
+                    finalResponse += responseHeader + "_ok_" + choosenDistrict.getPullPort() + "_" + choosenDistrict.getPubPort();
+
+                } else  finalResponse += responseHeader + "_error"; 
+
+            } else if(parts[0].equals("district")) {
+
                 local = parts[1];
 
+                //district_Porto
+
                 port_local = config.getPort("local", local);
 
-                if(!district_servers.containsKey(local)){
+                int generatedPullPort = -1; //not defined
 
-                    port_final = Integer.parseInt(port_local) + Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER"));
-                    district_servers.put(local, new ArrayList<>(Arrays.asList(port_final)));
+                if(!localServers.containsKey(local)){
 
-                }else{
-                    int newNumberPort = Integer.parseInt(port_local) * (1 + district_servers.get(local).size());
-                    port_final = newNumberPort + Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER")); 
-                    district_servers.get(local).add(port_final);
+                    generatedPullPort = Integer.parseInt(port_local) + Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER"));
+                    localServers.put(local, new RoundRobinDistrict(new ArrayList<>(Arrays.asList(new DistrictData(
+                        generatedPullPort, NOT_DEFINED_PUB
+                    )))));    
+                
+                } else {
+                    
+                    generatedPullPort = Integer.parseInt(port_local) + (NUM_DISTRICTS * district_servers.get(local).size()) + Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER")); 
+                    localServers.get(local).appendDistrictServer(new DistrictData(
+                        generatedPullPort, NOT_DEFINED_PUB
+                    ));
                 }
-            }
-            //centralserver_ok_PORTAPUSH_PORTAXPUB
-            //centralserver_error
-            if(port_local == null){
 
-                res = "centralserver_error";
-            }
-            else{
-
-                res = "centralserver_ok_" + port_final + "_10050";
+                finalResponse += "_ok_" + generatedPullPort + "_" + NOT_DEFINED_PUB;
             }
 
-            return res;
+            return finalResponse;
         }
     
         public static void main(String[] args) {
