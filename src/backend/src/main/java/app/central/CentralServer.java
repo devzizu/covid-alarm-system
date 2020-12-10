@@ -29,6 +29,8 @@ public class CentralServer {
 
     static BrokerProtocol brokerObj = new BrokerProtocol();
 
+    static int PORT_PUB_LAYER1 = -1;
+
     public static String parseMsg(String data){
         
         //send : cliente_username_residencia
@@ -99,6 +101,8 @@ public class CentralServer {
             int XSUB = numBroker++;
             layer1List.add(new Broker(XPUB, XSUB));
 
+            PORT_PUB_LAYER1 = XPUB;
+
             finalResponse += "_ok_"+ XPUB + "_" +XSUB;
 
         } else if(parts[0].equals("layer2")) {
@@ -118,7 +122,10 @@ public class CentralServer {
         return finalResponse;
     }
 
-    public void sendPub(int XPUB){
+    public static void sendPub(ZMQ.Socket socketPub){
+        //Tipo da mensagem que terá de ser subscrita
+        String Message = "layer2_"+ PORT_PUB_LAYER1;
+        socketPub.send(Message);
 
     }
 
@@ -141,10 +148,16 @@ public class CentralServer {
                 if(sndMsg.equals("objectLayer2")){
                     socketRep.send(SerializationUtils.serialize(brokerObj));
                 }else{
-                    a = 2;
+
                     socketRep.send(sndMsg);
+
+                    if(PORT_PUB_LAYER1 > 0){
+                        sendPub(socketPub);
+                        PORT_PUB_LAYER1 = -1;
+                        System.out.println("Sending through PUB-SUB to all layer 2 brokers: " + sndMsg);
+                    }
                 }
-                System.out.println("Sending: " + sndMsg);
+                System.out.println("Sending through REQ-REP: " + sndMsg);
             }
         }
     }
