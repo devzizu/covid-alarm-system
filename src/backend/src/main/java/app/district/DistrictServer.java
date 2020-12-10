@@ -5,7 +5,7 @@ import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
-import app.ConfigReader;
+import app.*;
 
 public class DistrictServer {
 
@@ -13,20 +13,28 @@ public class DistrictServer {
 
         public static ConfigReader config = new ConfigReader();
 
-        public static String callCentral(ZMQ.Socket socket_req){
-            String port = config.getPort("ports", "CENTRAL_SERVER");
+        public static DistrictData requestDistrictData(ZMQ.Socket socket_req){    
+                    
+            //send : district_LOCAL
+            //rcv  : ok(error)_districtpull_?pub
+            
+            //request to central server port
+            String port = config.getPort("ports", "CENTRAL_SERVER_REP");
             socket_req.connect("tcp://*:" + port);
+ 
+            //create request message
             String message = "district_"+local;
             socket_req.send(message);
             byte[] msg_recv = socket_req.recv();
             String msg = new String(msg_recv);
             
-            //"centralserver_ok(error)_XSUBPORT"
+            //error handling not defined in CentralServer...(fixme)
             String[] campos = msg.split("_");
             if(campos[1].equals("ok")){
-                return campos[3];
-            }
-            else return null;
+                int pull_port = Integer.parseInt(campos[2]);
+                int pub_port = Integer.parseInt(campos[3]);
+                return new DistrictData(pull_port, pub_port);
+            } else return null;
         }
     
         public static void main(String[] args) {
@@ -39,22 +47,21 @@ public class DistrictServer {
                 ZMQ.Socket socket_pub = context.createSocket(SocketType.PUB);
                 ZMQ.Socket socket_req = context.createSocket(SocketType.REQ))
             {
-                String pubPort = callCentral(socket_req);
-                System.out.println("[Distrital] Porta Pub: " + pubPort);
+                DistrictData dData = requestDistrictData(socket_req);
 
-                int port = Integer.parseInt(config.getPort("local", local)) + Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER"));
+                int Pub_port = dData.getPubPort();
+                int Pull_port = dData.getPullPort();
 
-                socket_pull.bind("tcp://*:" + port);
-                System.out.println("[Distrital] Porta Pull: " + port);
+                socket_pull.bind("tcp://*:" + Pull_port);
+                socket_pub.bind("tcp://*:" + Pub_port);
 
-
-                socket_pub.bind("tcp://*:" + pubPort);
+                System.out.println("[District: " + local + "] Porta Pub: " + Pub_port);
+                System.out.println("[District: " + local + "] Porta Pull: " + Pull_port);
 
                 while(true) {
-                        byte[] msg = socket_pull.recv();
-                        
-                        System.out.println("broadcasting: " + new String(msg));
-                        socket_pub.send(msg);
+                    byte[] msg = socket_pull.recv();                        
+                    System.out.println("[District: " + local + "] Broadcasting: " + new String(msg));
+                    socket_pub.send(msg);
                 }
             }
         }

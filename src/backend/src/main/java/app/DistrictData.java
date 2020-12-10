@@ -1,4 +1,4 @@
-package app.central;
+package app;
 
 public class DistrictData {
 
@@ -17,4 +17,14 @@ public class DistrictData {
     public int getPubPort() {
         return this.pub_port;
     }
+
+
+    @Override
+    public String toString() {
+        return "{" +
+            " pull='" + this.pull_port + "'" +
+            ", pub='" + this.pub_port + "'" +
+            "}";
+    }
+
 }

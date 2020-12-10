@@ -29,7 +29,7 @@ acceptor(LSock, Configuration) ->
     %Init comunication with central server -> Response Push port and xSub port
     io:format("\tStarting zeromq servers (req, push, xpub)...~n", []),
     % Get ports from REQ socket: central server
-    {integer, CS_PORT} = toml:get_value(["ports"], "CENTRAL_SERVER", Configuration),
+    {integer, CS_PORT} = toml:get_value(["ports"], "CENTRAL_SERVER_REP", Configuration),
     case zeromq_servers:request_ports_central(ClientSocket, CS_PORT, Username) of
         {ok, PUSH_PORT, XPUB_PORT} -> 
            % Connection to push district server    

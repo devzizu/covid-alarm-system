@@ -2,7 +2,7 @@ package app.central;
 
 import java.util.List;
 
-import jdk.nashorn.internal.ir.ReturnNode;
+import app.*;
 
 public class RoundRobinDistrict {
 
@@ -27,12 +27,19 @@ public class RoundRobinDistrict {
     }
 
     public DistrictData getNextDistrictServer() {
-        int next_server = (this.current_server+1)%district_servers.size();
-        return district_servers.get(next_server);
+        this.current_server = (this.current_server+1)%district_servers.size();
+        return district_servers.get(this.current_server);
     }
 
     public void appendDistrictServer(DistrictData d) {
         this.district_servers.add(d);
     }
 
+
+    @Override
+    public String toString() {
+        return "{" +
+            ", servers='" + getDistrict_servers() + "'" +
+            "}";
+    }
 }

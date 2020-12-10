@@ -23,7 +23,7 @@ loop(Accounts) ->
 
 		 {{login, Username, Passwd}, From} ->
 			case maps:find(Username, Accounts) of
-				{ok, {Passwd,_,Residencia}} ->
+				{ok, {Passwd,false,Residencia}} ->
 					From ! {ok},
 					loop(maps:update(Username, {Passwd, true, Residencia}, Accounts));
 				_ ->
