@@ -53,7 +53,7 @@ public class DistrictServer {
                 int Pull_port = dData.getPullPort();
 
                 socket_pull.bind("tcp://*:" + Pull_port);
-                socket_pub.bind("tcp://*:" + Pub_port);
+                socket_pub.connect("tcp://*:" + Pub_port);
 
                 System.out.println("[District: " + local + "] Porta Pub: " + Pub_port);
                 System.out.println("[District: " + local + "] Porta Pull: " + Pull_port);

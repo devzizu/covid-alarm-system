@@ -60,41 +60,9 @@ public class DynamicBrokerLayer1 {
 
                 System.out.println("[Broker] XPUB port = " + xpub);
                 System.out.println("[Broker] XSUB port = " + xsub);
-                   
 
+                ZMQ.proxy(XSUBSocket, XPUBSocket, null);//era so isto azevedo??
             }
-
-    }
-
-    public static class PubHandler implements Runnable {
-
-        private int CENTRAL_SERVER_PUB = Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER_PUB"));
-        private ZContext context;
-        private ZMQ.Socket xSUB_Socket;
-
-        public PubHandler(ZContext context) {
-            this.context = context;
-            this.
-        }
-
-        @Override
-        public void run() {
-
-            try (
-                ZMQ.Socket SUBSocket = context.createSocket(SocketType.SUB)
-            ) {
-                SUBSocket.connect("tcp://*:"+this.CENTRAL_SERVER_PUB);
-                SUBSocket.subscribe("new".getBytes());
-
-                while(true) {
-                    byte[] res = SUBSocket.recv();
-                    System.out.println("[Broker, sub=new] received: " + (new String(res)));
-
-                    SUBSocket.send();
-                }
-            }
-            
-        }
 
     }
 }

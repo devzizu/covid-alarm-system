@@ -7,6 +7,7 @@ import org.zeromq.ZMQ;
 
 import app.*;
 import app.broker.*;
+import org.apache.commons.lang3.SerializationUtils;
 
 import java.util.*;
 
@@ -17,12 +18,16 @@ public class CentralServer {
         static Map<String, RoundRobinDistrict> localServers = new HashMap<>();
 
         static List<Broker> layer1List = new ArrayList<>();
-        static List<Broker> layer2LIst = new ArrayList<>();
+        static int current_layer1 = 0;
+
+        static List<Integer> layer2List = new ArrayList<>();
+        static int current_layer2 = 0;
 
         static ConfigReader config = new ConfigReader();
         static int NOT_DEFINED_PUB = 10999;
         static int NUM_DISTRICTS   =  Integer.parseInt(config.getNumDistricts());
-        
+
+        static BrokerProtocol brokerObj = new BrokerProtocol();
 
         public static String parseMsg(String data){
             
@@ -47,7 +52,10 @@ public class CentralServer {
                     RoundRobinDistrict rrd = localServers.get(local);
                     DistrictData choosenDistrict = rrd.getNextDistrictServer();
 
-                    finalResponse += responseHeader + "_ok_" + choosenDistrict.getPullPort() + "_" + choosenDistrict.getPubPort();
+                    current_layer2 = (current_layer2 + 1) % layer2List.size();
+                    int PUB_PORT = layer2List.get(current_layer2);
+
+                    finalResponse += responseHeader + "_ok_" + choosenDistrict.getPullPort() + "_" + PUB_PORT;
 
                 } else  finalResponse += responseHeader + "_error"; 
 
@@ -61,54 +69,59 @@ public class CentralServer {
 
                 int generatedPullPort = -1; //not defined
 
+                current_layer1 = (current_layer1 + 1) % layer1List.size();
+                int PUB_PORT = layer1List.get(current_layer1).getXSUB_PORT();
+
+
                 if(!localServers.containsKey(local)){
 
                     generatedPullPort = Integer.parseInt(port_local) + Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER_REP"));
                     localServers.put(local, new RoundRobinDistrict(new ArrayList<>(Arrays.asList(new DistrictData(
-                        generatedPullPort, NOT_DEFINED_PUB
+                        generatedPullPort, PUB_PORT
                     )))));    
                 
                 } else {
                     
                     generatedPullPort = Integer.parseInt(port_local) + (NUM_DISTRICTS * localServers.get(local).sizeL()) + Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER_REP")); 
                     localServers.get(local).appendDistrictServer(new DistrictData(
-                        generatedPullPort, NOT_DEFINED_PUB
+                        generatedPullPort, PUB_PORT
                     ));
                 }
 
                 finalResponse += "_ok_" + generatedPullPort + "_" + NOT_DEFINED_PUB++;
 
                 System.out.println("-> District Servers: \n" + localServers.toString());
+
             } else if(parts[0].equals("layer1")) {
                     
-                    int numBroker = Integer.parseInt(config.getPort("ports", "LAYER1_BROKER"));
-                    int XPUB = numBroker;
-                    int XSUB = numBroker++;
-                    layer1List.add(new Broker(XPUB, XSUB));
+                int numBroker = Integer.parseInt(config.getPort("ports", "LAYER1_BROKER"));
+                int XPUB = numBroker;
+                int XSUB = numBroker++;
+                layer1List.add(new Broker(XPUB, XSUB));
 
-                    finalResponse += "_ok_"+ XPUB + "_" +XSUB;
+                finalResponse += "_ok_"+ XPUB + "_" +XSUB;
 
             } else if(parts[0].equals("layer2")) {
                     
                 int numBroker = Integer.parseInt(config.getPort("ports", "LAYER2_BROKER"));
                 int XPUB = numBroker;
-                int XSUB = numBroker++;
-                layer2List.add(new Broker(XPUB, XSUB));
+                layer2List.add(XPUB);
 
+                //Envia objeto por pub para todos 
+                brokerObj.setPUB_PORT(XPUB);
+                brokerObj.setSUB_PORTs(layer1List);
 
-                finalResponse += "_ok_"+ XPUB + "_" +XSUB;
+                finalResponse += "objectLayer2";
 
         }
 
             return finalResponse;
         }
 
-        
-        public void pubLayer1(int , ZMQ.Socket socket){
-            String final = "";
-            
-        }
+        public void sendPub(int XPUB){
 
+        }
+    
         public static void main(String[] args) {
 
             try (
@@ -125,8 +138,12 @@ public class CentralServer {
                     String data = new String(socketRep.recv());
                     System.out.println("Received: " + data);
                     String sndMsg = parseMsg(data.replace("\"", ""));
+                    if(sndMsg.equals("objectLayer2")){
+                        socketRep.send(SerializationUtils.serialize(brokerObj));
+                    }else{
+                        socketRep.send(sndMsg);
+                    }
                     System.out.println("Sending: " + sndMsg);
-                    socketRep.send(sndMsg);
                 }
             }
         }
