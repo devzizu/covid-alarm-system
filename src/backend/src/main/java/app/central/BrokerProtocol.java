@@ -1,12 +1,15 @@
-package app;
+package app.central;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 import app.broker.Broker;
 
 public class BrokerProtocol implements Serializable {
    
+    private static final long serialVersionUID = 1L;
+
     private int XPUB_PORT;
     private List<Integer> XSUB_PORTS;
 
@@ -14,7 +17,6 @@ public class BrokerProtocol implements Serializable {
         this.XPUB_PORT = -1;
         this.XSUB_PORTS = new ArrayList<>();
     }
-
 
     public BrokerProtocol(int XPUB_PORT, List<Integer> XSUB_PORTS) {
         this.XPUB_PORT = XPUB_PORT;
