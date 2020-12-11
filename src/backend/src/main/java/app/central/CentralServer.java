@@ -126,10 +126,10 @@ public class CentralServer {
         return finalResponse;
     }
 
-    public static void sendPub(ZMQ.Socket socketPub){
+    public static void sendPub(ZMQ.Socket socketXPub){
         //Tipo da mensagem que terá de ser subscrita
-        String Message = "layer2_"+ PORT_PUB_LAYER1;
-        socketPub.send(Message);
+        String Message = "+_"+ PORT_PUB_LAYER1;
+        socketXPub.send(Message);
 
     }
 
@@ -138,12 +138,12 @@ public class CentralServer {
         try (
             ZContext context = new ZContext();
             ZMQ.Socket socketRep = context.createSocket(SocketType.REP);
-            ZMQ.Socket socketPub = context.createSocket(SocketType.PUB))
+            ZMQ.Socket socketXPub = context.createSocket(SocketType.PUB))
         {
             String port = config.getPort("ports", "CENTRAL_SERVER_REP");
             socketRep.bind("tcp://*:" + port);
             String pubPort = config.getPort("ports", "CENTRAL_SERVER_PUB");
-            socketPub.bind("tcp://*:" + pubPort);
+            socketXPub.bind("tcp://*:" + pubPort);
 
             System.out.println("Starting Central Server REP on port " + port + "...");
             System.out.println("Starting Central Server PUB on port " + pubPort + "...");
@@ -160,7 +160,7 @@ public class CentralServer {
                     socketRep.send(sndMsg);
 
                     if(PORT_PUB_LAYER1 > 0 && !layer2List.isEmpty()) {
-                        sendPub(socketPub);
+                        sendPub(socketXPub);
                         PORT_PUB_LAYER1 = -1;
                         System.out.println("Sending through PUB-SUB to all layer 2 brokers: " + sndMsg);
                     }

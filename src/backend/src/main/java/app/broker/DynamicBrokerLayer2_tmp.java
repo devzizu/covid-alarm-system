@@ -6,7 +6,7 @@ import app.*;
 import app.central.BrokerProtocol;
 import org.apache.commons.lang3.SerializationUtils;
 
-public class DynamicBrokerLayer2 {
+public class DynamicBrokerLayer2_tmp {
 
     static ConfigReader config = new ConfigReader();
 
@@ -38,25 +38,47 @@ public class DynamicBrokerLayer2 {
             {
 
                 BrokerProtocol generated = requestDynamicBrokerLayer2(socket_req);
+            
+                //broker was requested successfully
 
-                //bind xpub
                 int xpub = generated.getXPUB_PORT();
                 XPUBSocket.bind("tcp://*:" + xpub);
 
-                //connect to existing layer1 xpubs
-                for(Integer xsub: generated.getXSUB_PORTS()){
-                    XSUBSocket.connect("tcp://*:" + xsub);
-                }
-
-                int pubCS = Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER_PUB"));
-                XSUBSocket.connect("tcp://*:" + pubCS);
-                
                 System.out.println("[Broker - layer2] XPUB port = " + xpub);
                 System.out.println("[Broker - layer2] XSUB port = " + generated.toString());
+                  
+                new Thread(() -> {
 
-                //--------------------------------------------------------------------------
+                    try (
+                        ZMQ.Socket SUBSocket = context.createSocket(SocketType.SUB)
+                    ) {
 
-                new Proxy(context, XPUBSocket, XSUBSocket).poll(); 
+                        //FIXME
+                        //XSUBSocket.bind("tcp://*:"+(xpub+200));
+
+                        for(Integer xsub: generated.getXSUB_PORTS()){
+                            XSUBSocket.connect("tcp://*:" + xsub);
+                        }
+
+                        int pub = Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER_PUB"));
+
+                        SUBSocket.connect("tcp://*:"+pub);
+                        SUBSocket.subscribe("layer2_".getBytes());
+                        
+                        while(true) {
+                            System.out.println("[Broker - layer2, notifier] waiting for new notifications...");
+                            byte[] resBytes = SUBSocket.recv();
+                            String resMsg = new String(resBytes);
+                            String[] parts = resMsg.split("_");
+                            System.out.println("[Broker] received notification: " + (resMsg));
+                            int newXPUB = Integer.parseInt(parts[1]);
+                            XSUBSocket.connect("tcp://*:" + newXPUB);
+                        }
+                    }
+
+                }).start();
+
+                ZMQ.proxy(XSUBSocket, XPUBSocket, null);
             }  
     }
 }
