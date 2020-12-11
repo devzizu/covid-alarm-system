@@ -56,7 +56,9 @@ public class CentralServer {
                 RoundRobinDistrict rrd = localServers.get(local);
                 DistrictData choosenDistrict = rrd.getNextDistrictServer();
 
+                //if (current_layer2 == -1) current_layer2 = 0;
                 current_layer2 = (current_layer2 + 1) % layer2List.size();
+
                 int PUB_PORT = layer2List.get(current_layer2);
 
                 finalResponse += responseHeader + "_ok_" + choosenDistrict.getPullPort() + "_" + PUB_PORT;
@@ -73,7 +75,9 @@ public class CentralServer {
 
             int generatedPullPort = -1; //not defined
 
+            //if (current_layer1 == -1) current_layer1 = 0;
             current_layer1 = (current_layer1 + 1) % layer1List.size();
+
             int PUB_PORT = layer1List.get(current_layer1).getXSUB_PORT();
 
 
@@ -141,7 +145,8 @@ public class CentralServer {
             String pubPort = config.getPort("ports", "CENTRAL_SERVER_PUB");
             socketPub.bind("tcp://*:" + pubPort);
 
-            System.out.println("Starting Central Server on port " + port + "...");
+            System.out.println("Starting Central Server REP on port " + port + "...");
+            System.out.println("Starting Central Server PUB on port " + pubPort + "...");
 
             while(true) {
                 String data = new String(socketRep.recv());

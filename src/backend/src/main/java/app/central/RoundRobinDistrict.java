@@ -27,6 +27,12 @@ public class RoundRobinDistrict {
     }
 
     public DistrictData getNextDistrictServer() {
+        /*
+        if (this.current_server == -1) {
+            this.current_server++;
+            return district_servers.get(0);
+        }
+        */
         this.current_server = (this.current_server+1)%district_servers.size();
         return district_servers.get(this.current_server);
     }
