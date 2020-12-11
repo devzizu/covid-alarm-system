@@ -70,10 +70,11 @@ public class DynamicBrokerLayer2 {
         public void run() {
 
             int pub = Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER_PUB"));
-            this.subSocket.connect("tcp://*:"+pub);
 
             this.subSocket.subscribe("layer2_".getBytes());
-
+            
+            this.subSocket.connect("tcp://*:"+pub);
+            
             while(true) {
                 System.out.println("[Broker - layer2, notifier] waiting for new notifications...");
                 byte[] resBytes = this.subSocket.recv();
