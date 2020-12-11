@@ -1,7 +1,5 @@
 package app.broker;
 
-import java.util.*;
-
 import org.zeromq.*;
 
 import app.*;
@@ -12,7 +10,7 @@ public class DynamicBrokerLayer1 {
 
     public static Broker requestDynamicBrokerLayer1(ZMQ.Socket socket_req){
         
-        //send : broker_layer1
+        //send : layer1
         //rcv  : ok(error)_xpub_xsub
 
         //request to central server port
@@ -54,15 +52,14 @@ public class DynamicBrokerLayer1 {
                 int xpub = generatedBroker.getXPUB_PORT();
                 int xsub = generatedBroker.getXSUB_PORT();
 
+                System.out.println("[Broker - layer1] XPUB port = " + xpub);
+                System.out.println("[Broker - layer1] XSUB port = " + xsub);
+
                 //bind broker ports
                 XPUBSocket.bind("tcp://*:" + xpub);
                 XSUBSocket.bind("tcp://*:" + xsub);
 
-                System.out.println("[Broker] XPUB port = " + xpub);
-                System.out.println("[Broker] XSUB port = " + xsub);
-
-                ZMQ.proxy(XSUBSocket, XPUBSocket, null);//era so isto azevedo??
+                ZMQ.proxy(XSUBSocket, XPUBSocket, null);
             }
-
     }
 }

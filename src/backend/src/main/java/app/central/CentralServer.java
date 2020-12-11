@@ -24,12 +24,14 @@ public class CentralServer {
     static int current_layer2 = 0;
 
     static ConfigReader config = new ConfigReader();
-    static int NOT_DEFINED_PUB = 10999;
+
     static int NUM_DISTRICTS   =  Integer.parseInt(config.getNumDistricts());
 
     static BrokerProtocol brokerObj = new BrokerProtocol();
 
     static int PORT_PUB_LAYER1 = -1;
+    static int numBrokerLayer1 = Integer.parseInt(config.getPort("ports", "LAYER1_BROKER"));
+    static int numBrokerLayer2 = Integer.parseInt(config.getPort("ports", "LAYER2_BROKER"));
 
     public static String parseMsg(String data){
         
@@ -42,7 +44,7 @@ public class CentralServer {
         String[] parts = data.split("_");
         String local;
         String responseHeader = "centralserver";
-        
+
         //client requests ports to connect
         if(parts[0].equals("cliente")) {
             
@@ -90,25 +92,23 @@ public class CentralServer {
                 ));
             }
 
-            finalResponse += "_ok_" + generatedPullPort + "_" + NOT_DEFINED_PUB++;
+            finalResponse += responseHeader + "_ok_" + generatedPullPort + "_" + PUB_PORT;
 
             System.out.println("-> District Servers: \n" + localServers.toString());
 
         } else if(parts[0].equals("layer1")) {
                 
-            int numBroker = Integer.parseInt(config.getPort("ports", "LAYER1_BROKER"));
-            int XPUB = numBroker;
-            int XSUB = numBroker++;
+            int XPUB = numBrokerLayer1++;
+            int XSUB = numBrokerLayer1++;
             layer1List.add(new Broker(XPUB, XSUB));
 
             PORT_PUB_LAYER1 = XPUB;
 
-            finalResponse += "_ok_"+ XPUB + "_" +XSUB;
+            finalResponse += responseHeader + "_ok_"+ XPUB + "_" +XSUB;
 
         } else if(parts[0].equals("layer2")) {
                 
-            int numBroker = Integer.parseInt(config.getPort("ports", "LAYER2_BROKER"));
-            int XPUB = numBroker;
+            int XPUB = numBrokerLayer2++;
             layer2List.add(XPUB);
 
             //Envia objeto por pub para todos 
@@ -138,6 +138,8 @@ public class CentralServer {
         {
             String port = config.getPort("ports", "CENTRAL_SERVER_REP");
             socketRep.bind("tcp://*:" + port);
+            String pubPort = config.getPort("ports", "CENTRAL_SERVER_PUB");
+            socketPub.bind("tcp://*:" + pubPort);
 
             System.out.println("Starting Central Server on port " + port + "...");
 
@@ -147,11 +149,12 @@ public class CentralServer {
                 String sndMsg = parseMsg(data.replace("\"", ""));
                 if(sndMsg.equals("objectLayer2")){
                     socketRep.send(SerializationUtils.serialize(brokerObj));
+                    brokerObj = new BrokerProtocol();
                 }else{
 
                     socketRep.send(sndMsg);
 
-                    if(PORT_PUB_LAYER1 > 0){
+                    if(PORT_PUB_LAYER1 > 0 && !layer2List.isEmpty()) {
                         sendPub(socketPub);
                         PORT_PUB_LAYER1 = -1;
                         System.out.println("Sending through PUB-SUB to all layer 2 brokers: " + sndMsg);

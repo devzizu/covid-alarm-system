@@ -3,6 +3,8 @@
 
 CENTRALSERVER_MAIN=app.central.CentralServer
 DISTRICTSERVER_MAIN=app.district.DistrictServer
+LAYER1_MAIN=app.broker.DynamicBrokerLayer1
+LAYER2_MAIN=app.broker.DynamicBrokerLayer2
 
 # Displays compile options
 default:
@@ -24,11 +26,17 @@ package:
 
 run_central:
 	@clear
-	#@read -p "Program arguments: " args; \
-	#mvn exec:java -Dexec.mainClass=$(MAIN_CLASS) -Dexec.args="$$args"
 	mvn exec:java -Dexec.mainClass=$(CENTRALSERVER_MAIN) 
 
 run_district:
 	@clear
 	@read -p "Program arguments: " args; \
 	mvn exec:java -Dexec.mainClass=$(DISTRICTSERVER_MAIN) -Dexec.args="$$args"
+
+run_layer1:
+	@clear
+	mvn exec:java -Dexec.mainClass=$(LAYER1_MAIN) 
+
+run_layer2:
+	@clear
+	mvn exec:java -Dexec.mainClass=$(LAYER2_MAIN) 

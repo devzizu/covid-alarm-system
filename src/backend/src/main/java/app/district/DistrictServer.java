@@ -55,7 +55,7 @@ public class DistrictServer {
                 socket_pull.bind("tcp://*:" + Pull_port);
                 socket_pub.connect("tcp://*:" + Pub_port);
 
-                System.out.println("[District: " + local + "] Porta Pub: " + Pub_port);
+                System.out.println("[District: " + local + "] Porta connect XSUB layer1: " + Pub_port);
                 System.out.println("[District: " + local + "] Porta Pull: " + Pull_port);
 
                 while(true) {
