@@ -7,7 +7,7 @@ import java.util.List;
 import app.broker.Broker;
 
 public class BrokerProtocol implements Serializable {
-   
+
     private static final long serialVersionUID = 1L;
 
     private int XPUB_PORT;
@@ -32,15 +32,14 @@ public class BrokerProtocol implements Serializable {
     }
 
     public void setPUB_PORT(int PUB_PORT) {
-        this.XPUB_PORT=PUB_PORT;
+        this.XPUB_PORT = PUB_PORT;
     }
 
     public void setSUB_PORTs(List<Broker> listLayer1) {
-        for(Broker b: listLayer1){
+        for (Broker b : listLayer1) {
             XSUB_PORTS.add(b.getXPUB_PORT());
         }
     }
-
 
     @Override
     public String toString() {

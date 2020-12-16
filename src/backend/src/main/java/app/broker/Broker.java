@@ -1,7 +1,7 @@
 package app.broker;
 
 public class Broker {
-   
+
     private int XPUB_PORT;
     private int XSUB_PORT;
 
@@ -20,9 +20,6 @@ public class Broker {
 
     @Override
     public String toString() {
-        return "{" +
-            " XPUB='" + getXPUB_PORT() + "'" +
-            ", XSUB='" + getXSUB_PORT() + "'" +
-            "}";
+        return "{" + " XPUB='" + getXPUB_PORT() + "'" + ", XSUB='" + getXSUB_PORT() + "'" + "}";
     }
 }

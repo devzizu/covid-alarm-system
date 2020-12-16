@@ -4,3 +4,4 @@ target/
 .project
 .settings/
 src/backend/bin/
+.prettierrc
