@@ -11,7 +11,7 @@ public class ConfigReader {
 
     Map<String, Object> portas = new HashMap<String, Object>();
     Map<String, Object> distritos = new HashMap<String, Object>();
-    Map<String, Object> defDist = new HashMap<String, Object>();
+    Map<String, Object> def = new HashMap<String, Object>();
 
     public ConfigReader() {
 
@@ -21,7 +21,7 @@ public class ConfigReader {
 
         this.portas = toml.getTable("ports").toMap();
         this.distritos = toml.getTable("local").toMap();
-        this.defDist = toml.getTable("default").toMap();
+        this.def = toml.getTable("default").toMap();
     }
 
     public String getPort(String key_principal, String key_secundaria) {
@@ -38,11 +38,19 @@ public class ConfigReader {
         return port;
     }
 
-    public String getNumDistricts() {
+    public String getDistricts() {
 
         String n = null;
-        n = (String) defDist.get("\"NR_DISTRICTS\"").toString();
+        n = (String) def.get("\"NR_DISTRICTS\"").toString();
         return n;
     }
+
+    public String getWorkers() {
+
+        String n = null;
+        n = (String) def.get("\"NR_WORKERS\"").toString();
+        return n;
+    }
+
 
 }

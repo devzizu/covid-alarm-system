@@ -25,11 +25,10 @@ public class CentralServer {
 
     static ConfigReader config = new ConfigReader();
 
-    static int NUM_DISTRICTS   =  Integer.parseInt(config.getNumDistricts());
+    static int NUM_DISTRICTS   =  Integer.parseInt(config.getDistricts());
 
     static BrokerProtocol brokerObj = new BrokerProtocol();
 
-    static int PORT_PUB_LAYER1 = -1;
     static int numBrokerLayer1 = Integer.parseInt(config.getPort("ports", "LAYER1_BROKER"));
     static int numBrokerLayer2 = Integer.parseInt(config.getPort("ports", "LAYER2_BROKER"));
 
@@ -45,8 +44,16 @@ public class CentralServer {
         String local;
         String responseHeader = "centralserver";
 
+        if(parts[0].equals("init")){
+            //if (current_layer2 == -1) current_layer2 = 0;
+            current_layer2 = (current_layer2 + 1) % layer2List.size();
+
+            int PUB_PORT = layer2List.get(current_layer2);
+
+            finalResponse += responseHeader + "_ok_" + PUB_PORT;
+
         //client requests ports to connect
-        if(parts[0].equals("cliente")) {
+        } else if(parts[0].equals("cliente")) {
             
             local = parts[2];
 
@@ -56,12 +63,7 @@ public class CentralServer {
                 RoundRobinDistrict rrd = localServers.get(local);
                 DistrictData choosenDistrict = rrd.getNextDistrictServer();
 
-                //if (current_layer2 == -1) current_layer2 = 0;
-                current_layer2 = (current_layer2 + 1) % layer2List.size();
-
-                int PUB_PORT = layer2List.get(current_layer2);
-
-                finalResponse += responseHeader + "_ok_" + choosenDistrict.getPullPort() + "_" + PUB_PORT;
+                finalResponse += responseHeader + "_ok_" + choosenDistrict.getRouterPort();
 
             } else  finalResponse += responseHeader + "_error"; 
 
@@ -73,7 +75,7 @@ public class CentralServer {
 
             String port_local = config.getPort("local", local);
 
-            int generatedPullPort = -1; //not defined
+            int generatedRouterPort = -1; //not defined
 
             //if (current_layer1 == -1) current_layer1 = 0;
             current_layer1 = (current_layer1 + 1) % layer1List.size();
@@ -83,20 +85,20 @@ public class CentralServer {
 
             if(!localServers.containsKey(local)){
 
-                generatedPullPort = Integer.parseInt(port_local) + Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER_REP"));
+                generatedRouterPort = Integer.parseInt(port_local) + Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER_REP"));
                 localServers.put(local, new RoundRobinDistrict(new ArrayList<>(Arrays.asList(new DistrictData(
-                    generatedPullPort, PUB_PORT
+                    generatedRouterPort, PUB_PORT
                 )))));    
             
             } else {
                 
-                generatedPullPort = Integer.parseInt(port_local) + (NUM_DISTRICTS * localServers.get(local).sizeL()) + Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER_REP")); 
+                generatedRouterPort = Integer.parseInt(port_local) + (NUM_DISTRICTS * localServers.get(local).sizeL()) + Integer.parseInt(config.getPort("ports", "CENTRAL_SERVER_REP")); 
                 localServers.get(local).appendDistrictServer(new DistrictData(
-                    generatedPullPort, PUB_PORT
+                    generatedRouterPort, PUB_PORT
                 ));
             }
 
-            finalResponse += responseHeader + "_ok_" + generatedPullPort + "_" + PUB_PORT;
+            finalResponse += responseHeader + "_ok_" + generatedRouterPort + "_" + PUB_PORT;
 
             System.out.println("-> District Servers: \n" + localServers.toString());
 
@@ -105,8 +107,6 @@ public class CentralServer {
             int XPUB = numBrokerLayer1++;
             int XSUB = numBrokerLayer1++;
             layer1List.add(new Broker(XPUB, XSUB));
-
-            PORT_PUB_LAYER1 = XPUB;
 
             finalResponse += responseHeader + "_ok_"+ XPUB + "_" +XSUB;
 
@@ -124,13 +124,6 @@ public class CentralServer {
     }
 
         return finalResponse;
-    }
-
-    public static void sendPub(ZMQ.Socket socketXPub){
-        //Tipo da mensagem que terá de ser subscrita
-        String Message = "+_"+ PORT_PUB_LAYER1;
-        socketXPub.send(Message);
-
     }
 
     public static void main(String[] args) {
@@ -155,16 +148,7 @@ public class CentralServer {
                 if(sndMsg.equals("objectLayer2")){
                     socketRep.send(SerializationUtils.serialize(brokerObj));
                     brokerObj = new BrokerProtocol();
-                }else{
-
-                    socketRep.send(sndMsg);
-
-                    if(PORT_PUB_LAYER1 > 0 && !layer2List.isEmpty()) {
-                        sendPub(socketXPub);
-                        PORT_PUB_LAYER1 = -1;
-                        System.out.println("Sending through PUB-SUB to all layer 2 brokers: " + sndMsg);
-                    }
-                }
+                }else socketRep.send(sndMsg);
                 System.out.println("Sending through REQ-REP: " + sndMsg);
             }
         }

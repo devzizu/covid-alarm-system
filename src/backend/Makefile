@@ -6,6 +6,7 @@ DISTRICTSERVER_MAIN=app.district.DistrictServer
 LAYER1_MAIN=app.broker.DynamicBrokerLayer1
 LAYER2_MAIN=app.broker.DynamicBrokerLayer2
 TESTE_LAYERS=app.test.GenerateLayers
+CLIENT_MAIN=app.client.Client
 
 # Displays compile options
 default:
@@ -46,4 +47,8 @@ run_test_layers:
 	@clear
 	@read -p "Program arguments: " args; \
 	mvn exec:java -Dexec.mainClass=$(TESTE_LAYERS) -Dexec.args="$$args"
+
+run_client:
+	@clear
+	mvn exec:java -Dexec.mainClass=$(CLIENT_MAIN) 
 

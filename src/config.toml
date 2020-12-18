@@ -1,5 +1,6 @@
 [default]
 "NR_DISTRICTS"          = 18    #fixed
+"NR_WORKERS"            = 3     #dynamic
 [ports]
 "FRONTEND"              = 10000 #fixed port
 "CENTRAL_SERVER_PUB"    = 10099 #fixed port
