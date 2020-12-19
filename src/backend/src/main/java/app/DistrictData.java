@@ -20,7 +20,7 @@ public class DistrictData {
 
     @Override
     public String toString() {
-        return "{" + " router='" + this.router_port + "'" + ", pub='" + this.pub_port + "'" + "}";
+        return "{" + " router.port='" + this.router_port + "'" + ", xsub.conn='" + this.pub_port + "'" + "}";
     }
 
 }

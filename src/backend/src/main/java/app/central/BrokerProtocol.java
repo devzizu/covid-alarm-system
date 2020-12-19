@@ -43,6 +43,6 @@ public class BrokerProtocol implements Serializable {
 
     @Override
     public String toString() {
-        return "XPUBS_connect: " + this.getXSUB_PORTS().toString();
+        return "{ xpubs: " + this.getXSUB_PORTS().toString() + " }";
     }
 }

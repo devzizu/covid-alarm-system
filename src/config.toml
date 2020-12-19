@@ -3,7 +3,6 @@
 "NR_WORKERS"            = 3     #dynamic
 [ports]
 "FRONTEND"              = 10000 #fixed port
-"CENTRAL_SERVER_PUB"    = 10099 #fixed port
 "CENTRAL_SERVER_REP"    = 10100 #fixed port
 "LAYER1_BROKER"         = 10200 #dynamic port
 "LAYER2_BROKER"         = 10300 #dynamic port

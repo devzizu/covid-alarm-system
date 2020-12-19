@@ -7,7 +7,7 @@ import app.*;
 public class RoundRobinDistrict {
 
     private int current_server;
-    private List<DistrictData> district_servers;  
+    private List<DistrictData> district_servers;
 
     public RoundRobinDistrict(List<DistrictData> district_servers) {
         this.current_server = 0;
@@ -22,18 +22,16 @@ public class RoundRobinDistrict {
         return this.district_servers;
     }
 
-    public int sizeL(){
+    public int sizeL() {
         return this.district_servers.size();
     }
 
     public DistrictData getNextDistrictServer() {
         /*
-        if (this.current_server == -1) {
-            this.current_server++;
-            return district_servers.get(0);
-        }
-        */
-        this.current_server = (this.current_server+1)%district_servers.size();
+         * if (this.current_server == -1) { this.current_server++; return
+         * district_servers.get(0); }
+         */
+        this.current_server = (this.current_server + 1) % district_servers.size();
         return district_servers.get(this.current_server);
     }
 
@@ -41,11 +39,8 @@ public class RoundRobinDistrict {
         this.district_servers.add(d);
     }
 
-
     @Override
     public String toString() {
-        return "{" +
-            ", servers='" + getDistrict_servers() + "'" +
-            "}";
+        return "{<" + getDistrict_servers() + ">}";
     }
 }

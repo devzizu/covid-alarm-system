@@ -6,60 +6,65 @@ import app.*;
 
 public class DynamicBrokerLayer1 {
 
+    // to read config values
     static ConfigReader config = new ConfigReader();
 
-    public static Broker requestDynamicBrokerLayer1(ZMQ.Socket socket_req){
-        
-        //send : layer1
-        //rcv  : ok(error)_xpub_xsub
+    public static Broker requestDynamicBrokerLayer1(ZMQ.Socket socket_req) {
 
-        //request to central server port
+        // get central server port from config file
         String port = config.getPort("ports", "CENTRAL_SERVER_REP");
+        // connect to central server
         socket_req.connect("tcp://*:" + port);
 
-        //create request message
-        socket_req.send(new String("layer1"));
+        // request msg of type: "layer1"
+        String request = "layer1";
+
+        System.out.println("[Layer 1 Broker] (centralserver) connecting and requesting <" + request + ">");
+
+        socket_req.send(request);
         byte[] msg_recv = socket_req.recv();
-        
-        //error handling not defined in CentralServer...(fixme)
+
+        // error handling not defined in CentralServer...(fixme)
         String[] campos = new String(msg_recv).split("_");
-        if(campos[1].equals("ok")){
+        if (campos[1].equals("ok")) {
             int xpub_port = Integer.parseInt(campos[2]);
             int xsub_port = Integer.parseInt(campos[3]);
             return new Broker(xpub_port, xsub_port);
-        } else return null;
+        } else
+            return null;
     }
 
     public static void main(String[] args) {
-        
-        try (
-                ZContext context = new ZContext();
-                //to request a dynamic layer 1 broker
+
+        System.out.println("[Layer 1 Broker] started...");
+
+        try (ZContext context = new ZContext();
                 ZMQ.Socket socket_req = context.createSocket(SocketType.REQ);
                 ZMQ.Socket XSUBSocket = context.createSocket(SocketType.XSUB);
-                ZMQ.Socket XPUBSocket = context.createSocket(SocketType.XPUB))
-            {
+                ZMQ.Socket XPUBSocket = context.createSocket(SocketType.XPUB)) {
 
-                Broker generatedBroker = requestDynamicBrokerLayer1(socket_req);
+            Broker generatedBroker = requestDynamicBrokerLayer1(socket_req);
 
-                if (generatedBroker == null) {
-                    System.out.println("[Broker error] Could not generate broker from CentralServer....");
-                    return;
-                }
+            // broker was requested successfully
 
-                //broker was requested successfully
-
-                int xpub = generatedBroker.getXPUB_PORT();
-                int xsub = generatedBroker.getXSUB_PORT();
-
-                System.out.println("[Broker - layer1] XPUB port = " + xpub);
-                System.out.println("[Broker - layer1] XSUB port = " + xsub);
-
-                //bind broker ports
-                XPUBSocket.bind("tcp://*:" + xpub);
-                XSUBSocket.bind("tcp://*:" + xsub);
-
-                ZMQ.proxy(XSUBSocket, XPUBSocket, null);
+            if (generatedBroker == null) {
+                System.out.println("[Layer 1 Broker] (error) can't negociate broker request.");
+                return;
             }
+
+            // broker was requested successfully
+            int xpub = generatedBroker.getXPUB_PORT();
+            int xsub = generatedBroker.getXSUB_PORT();
+
+            System.out.println("[Layer 1 Broker] (centralserver) Got (bind) XPUB.port = " + xpub);
+            System.out.println("[Layer 1 Broker] (centralserver) Got (bind) XSUB.port = " + xsub);
+
+            // bind broker ports
+            XPUBSocket.bind("tcp://*:" + xpub);
+            XSUBSocket.bind("tcp://*:" + xsub);
+
+            // start proxy
+            ZMQ.proxy(XSUBSocket, XPUBSocket, null);
+        }
     }
 }

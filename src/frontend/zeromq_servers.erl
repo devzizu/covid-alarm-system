@@ -12,7 +12,7 @@ request_pub_notification_central(ClientSocket, Socket) ->
         3 ->
             ["centralserver", "ok", ZMQ_PUB_PORT] = Res,
                 % returning received ports
-                SendMessage = lists:flatten(io_lib:format("\"pub_~s~n\"", [ZMQ_PUB_PORT])),
+                SendMessage = lists:flatten(io_lib:format("pub_~s~n", [ZMQ_PUB_PORT])),
                 gen_tcp:send(ClientSocket, SendMessage),
                 {ok};
         2 ->
