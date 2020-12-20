@@ -1,5 +1,7 @@
 package diretorio.dataTypes;
 
+import diretorio.api.Top5Positions;
+
 public class Posicao implements Comparable<Posicao>{
 
     public int positionX;
@@ -37,6 +39,9 @@ public class Posicao implements Comparable<Posicao>{
             "}";
     }
     
+    public Top5Positions toTop5(){
+        return new Top5Positions(positionX, positionY, record, district);
+    }
 
     
 }

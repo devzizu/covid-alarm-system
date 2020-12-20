@@ -21,8 +21,8 @@ import diretorio.api.ContactAvg;
 import diretorio.api.InfRatio;
 import diretorio.api.InfUsers;
 import diretorio.api.NUsers;
-import diretorio.dataTypes.Distrito;
-import diretorio.dataTypes.User;
+import diretorio.api.Top5Positions;
+import diretorio.dataTypes.*;
 
 @Path("/districts")
 @Produces(MediaType.APPLICATION_JSON)
@@ -134,5 +134,16 @@ public class DiretorioResource {
         return Response.ok(new ContactAvg(this.distritos.values().stream().mapToDouble(e->e.mediaContactos()).sum()/18.0)).build();
     }
 
+
+    @GET
+    @Path("/top5Locations")
+    public Response top5Locations(){
+        //TreeSet<Top5Positions> result = new TreeSet<>();
+        return Response.ok(distritos.values().stream().flatMap(l->l.top5.stream().map(e->e.toTop5())).collect(Collectors.toCollection(()->new TreeSet<Top5Positions>())).stream().limit(5).collect(Collectors.toList())).build();
+        //for(Distrito d : distritos.values()){
+        //    result.addAll(d.top5.stream().map(e->e.toTop5()).collect(Collectors.toList()));
+        //}
+        //return Response.ok(result.stream().limit(5).collect(Collectors.toList())).build();
+    }
 }
 
