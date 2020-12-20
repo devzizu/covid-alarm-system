@@ -52,4 +52,17 @@ public class ConfigReader {
         return n;
     }
 
+    public int getMapSize() {
+
+        String n = null;
+        n = (String) def.get("\"MAP_SIZE\"").toString();
+        return Integer.parseInt(n);
+    }
+
+    public String getDiretorioURI() {
+
+        String n = null;
+        n = (String) def.get("\"DIRETORIO_RESOURCE\"").toString();
+        return n;
+    }
 }

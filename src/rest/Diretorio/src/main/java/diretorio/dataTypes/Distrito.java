@@ -1,65 +1,80 @@
 package diretorio.dataTypes;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
+public class Distrito implements Comparable<Distrito> {
 
-
-
-public class Distrito implements Comparable<Distrito>{
-    
     public String name;
     public int nInfetados;
     public int nContact;
-  
-    public Map<String,User> users;
+
+    public Map<String, User> users;
     public TreeSet<Posicao> top5;
 
     public Distrito(String name) {
         this.name = name;
-        this.nInfetados=0;
-        this.nContact=0;
+        this.nInfetados = 0;
+        this.nContact = 0;
         this.top5 = new TreeSet<>();
-        
+
         this.users = new ConcurrentHashMap<>();
     }
 
-    public double infectedRatio(){
+    public double infectedRatio() {
         double nUsers = users.size();
-        if(nUsers==0) return 0;
-        return (((double)nInfetados)/nUsers)*100;
+        if (nUsers == 0)
+            return 0;
+        return (((double) nInfetados) / nUsers) * 100;
     }
 
-    public boolean infectedUser(String username){
+    public boolean infectedUser(String username) {
         User u = users.get(username);
-        if(u==null) return false;
-        u.infetado = true;
-        this.nInfetados++;
+        if (u == null)
+            return false;
+        if (!u.infetado) {
+            u.infetado = true;
+            this.nInfetados++;
+            return true;
+        }
+        return false;
+    }
+
+    public boolean infContactLUsers(List<String> usersL) {
+        for (String username : usersL) {
+            User u = users.get(username);
+            if (u != null && !u.contactInf) {
+                u.contactInf = true;
+                this.nContact++;
+            }
+        }
         return true;
     }
 
-    public boolean infContactUser(String username){
+    public boolean infContactUser(String username) {
         User u = users.get(username);
-        if(u==null) return false;
-        if (!u.contactInf){
+        if (u == null)
+            return false;
+        if (!u.contactInf) {
             u.contactInf = true;
             this.nContact++;
         }
         return true;
     }
 
-    public boolean updateTop(int positionX,int positionY,int record){
+    public boolean updateTop(int positionX, int positionY, int record) {
 
         Posicao p = new Posicao(positionX, positionY, record, this.name);
 
         Iterator<Posicao> iterator = top5.iterator();
 
-        while(iterator.hasNext()){
+        while (iterator.hasNext()) {
             Posicao p1 = iterator.next();
-            if(p1.equals(p)){
-                if(p1.record < record){
+            if (p1.equals(p)) {
+                if (p1.record < record) {
                     top5.remove(p1);
                     top5.add(p);
                     return true;
@@ -70,29 +85,24 @@ public class Distrito implements Comparable<Distrito>{
 
         top5.add(p);
 
-        if(top5.size()>5){
+        if (top5.size() > 5) {
             top5.pollLast();
         }
-
-        System.out.println(top5.toString());
-
-
         return true;
     }
 
     @Override
     public int compareTo(Distrito d) {
-        if(this.infectedRatio() >= d.infectedRatio()) return -1;
+        if (this.infectedRatio() >= d.infectedRatio())
+            return -1;
         return 1;
     }
 
-    
-
-
-    public double mediaContactos(){
+    public double mediaContactos() {
         double nUsers = users.size();
-        if (nUsers==0) return 0;
-        return (nContact/nUsers);
+        if (nUsers == 0)
+            return 0;
+        return (nContact / nUsers);
     }
 
 }

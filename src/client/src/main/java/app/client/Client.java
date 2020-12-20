@@ -139,7 +139,7 @@ public class Client {
 
                         break;
 
-                    // clear
+                    // operation
                     case 2:
 
                         GUI.command_prompt("operation", GUI.ANSI_GREEN);
