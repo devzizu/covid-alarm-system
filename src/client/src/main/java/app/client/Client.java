@@ -20,6 +20,8 @@ public class Client {
 
     static int PORT_FRONTEND = Integer.parseInt(config.getPort("ports", "FRONTEND"));
 
+    static Notifications notificationThread;
+
     public static boolean recv_notifications(BufferedReader frontendSocketReader) throws IOException {
 
         // 1st request, block until it gets a notification socket
@@ -27,8 +29,6 @@ public class Client {
 
         String msg = frontendSocketReader.readLine();
         String[] parts = msg.split("_");
-        System.out.println(msg);
-        System.out.println(parts[0]);
 
         if (parts[0].equals("pub")) {
 
@@ -39,7 +39,8 @@ public class Client {
                 System.out.println("[Client:app] OK, notification socket: xpub = " + pub_port);
 
                 // Thread que recebe notificações
-                new Notifications(context, pub_port);
+                notificationThread = new Notifications(context, pub_port);
+                notificationThread.start();
             }
 
             return true;
@@ -85,14 +86,15 @@ public class Client {
 
             String option = "";
 
-            GUI.clear_terminal();
+            // GUI.clear_terminal();
             GUI.main_menu();
 
-            boolean stop_application = false, logged = false;
+            boolean stop_application = false;
+            // boolean logged = false;
 
             while (!stop_application) {
 
-                GUI.command_prompt("cmd", GUI.ANSI_GREEN);
+                GUI.command_prompt("cmd", GUI.ANSI_BLUE);
                 option = stdIn.readLine();
 
                 int option_selected = -1;
@@ -120,6 +122,22 @@ public class Client {
                         writer.println(request);
                         writer.flush();
 
+                        // if login OK
+                        // {ok,"mirs"}
+
+                        // wait until response from frontend
+                        response = reader.readLine();
+
+                        if (response.startsWith("{ok")) {
+
+                            notificationThread.subscribe(username);
+                            notificationThread.subscribe("Porto");
+
+                            GUI.success("loggin successfull!");
+                        } else {
+                            GUI.error("loggin failed!");
+                        }
+
                         break;
 
                     // register
@@ -137,6 +155,19 @@ public class Client {
                         writer.println(request);
                         writer.flush();
 
+                        // if login OK
+                        // {ok,"mirs"}
+
+                        // wait until response from frontend
+                        response = reader.readLine();
+
+                        if (response.endsWith("login_pls}")) {
+
+                            GUI.warning_nl("registration done, loggin please!");
+                        } else {
+                            GUI.error("registration failed!");
+                        }
+
                         break;
 
                     // operation
@@ -148,6 +179,10 @@ public class Client {
 
                         writer.println(request);
                         writer.flush();
+
+                        response = reader.readLine();
+
+                        GUI.warning_nl(response);
 
                         break;
 
@@ -161,14 +196,9 @@ public class Client {
                         GUI.error("operation not permitted...");
                         continue;
                 }
-
-                // wait until response from frontend
-                response = reader.readLine();
-
-                System.out.println(response);
             }
 
-            // socket.close();
+            socket.close();
 
         } catch (Exception e) {
 
@@ -182,6 +212,7 @@ public class Client {
 class Notifications extends Thread {
     ZContext context;
     int pub_port;
+    ZMQ.Socket xpubSocket;
 
     Notifications(ZContext context, int pub_port) {
         this.context = context;
@@ -190,19 +221,22 @@ class Notifications extends Thread {
 
     public void run() {
 
-        try (ZMQ.Socket xpubSocket = context.createSocket(SocketType.SUB)) {
+        try (ZMQ.Socket xpubS = context.createSocket(SocketType.SUB)) {
 
-            xpubSocket.connect("tcp://localhost:" + this.pub_port);
+            this.xpubSocket = xpubS;
 
-            // needs to subscribe?
-            // xpubSocket.subscribe(...);
+            this.xpubSocket.connect("tcp://localhost:" + this.pub_port);
 
             while (true) {
-                byte[] msg = xpubSocket.recv();
+                byte[] msg = this.xpubSocket.recv();
                 String message = new String(msg);
                 System.out.println("[Client:app] Notification! data = " + message);
             }
         }
 
+    }
+
+    public void subscribe(String subtopic) {
+        this.xpubSocket.subscribe(subtopic);
     }
 }

@@ -65,4 +65,11 @@ public class ConfigReader {
         n = (String) def.get("\"DIRETORIO_RESOURCE\"").toString();
         return n;
     }
+
+    public int getLimitUsers() {
+
+        String n = null;
+        n = (String) def.get("\"LIMIT_USERS\"").toString();
+        return Integer.parseInt(n);
+    }
 }

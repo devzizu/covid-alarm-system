@@ -2,6 +2,7 @@
 "NR_DISTRICTS"          = 18    #fixed
 "NR_WORKERS"            = 3     #dynamic
 "MAP_SIZE"              = 100   #fixed
+"LIMIT_USERS"           = 1     #fixed
 "DIRETORIO_RESOURCE"    = "http://localhost:8080/districts"   #fixed
 [ports]
 "FRONTEND"              = 10000 #fixed port

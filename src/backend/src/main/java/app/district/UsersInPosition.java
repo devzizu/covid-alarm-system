@@ -6,8 +6,11 @@ public class UsersInPosition {
 
     private HashSet<String> USERS_IN_POSITION = new HashSet<>();
 
+    private boolean SENT_LIMIT_NOTIFICATION;
+
     public UsersInPosition() {
         this.USERS_IN_POSITION = new HashSet<>();
+        this.SENT_LIMIT_NOTIFICATION = false;
     }
 
     public void addUser(String uname) {
@@ -25,5 +28,13 @@ public class UsersInPosition {
 
     public int getNumberOfUsers() {
         return this.USERS_IN_POSITION.size();
+    }
+
+    public boolean getSentLimit() {
+        return this.SENT_LIMIT_NOTIFICATION;
+    }
+
+    public void setSentLimit(boolean sl) {
+        this.SENT_LIMIT_NOTIFICATION = sl;
     }
 }

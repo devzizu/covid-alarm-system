@@ -59,6 +59,11 @@ public class GUI {
         System.out.println(ANSI_RED + "error: " + error_message + ANSI_RESET);
     }
 
+    public static void success(String succString) {
+
+        System.out.println(ANSI_GREEN + "success! " + succString + ANSI_RESET);
+    }
+
     public static void warning_no_nl(String msg) {
 
         System.out.print(ANSI_BLUE + msg + ANSI_RESET);
@@ -84,6 +89,6 @@ public class GUI {
 
         display_banner_file(MAIN_MENU_BANNER, ANSI_BLUE);
         System.out.println();
-        options(STARTUP_OPTIONS, ANSI_YELLOW);
+        options(STARTUP_OPTIONS, ANSI_WHITE);
     }
 }

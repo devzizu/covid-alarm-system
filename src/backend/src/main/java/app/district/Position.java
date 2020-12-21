@@ -28,4 +28,15 @@ public class Position {
         return this.posY;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (o == this)
+            return true;
+        if (!(o instanceof Position)) {
+            return false;
+        }
+        Position position = (Position) o;
+        return posX == position.posX && posY == position.posY;
+    }
+
 }
