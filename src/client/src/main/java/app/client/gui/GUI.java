@@ -1,3 +1,4 @@
+
 package app.client.gui;
 
 import java.io.BufferedReader;
@@ -6,6 +7,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import app.client.User;
 
 public class GUI {
 
@@ -29,7 +32,10 @@ public class GUI {
     // --------------------------------------------------------------------------
 
     private static List<String> STARTUP_OPTIONS = new ArrayList<>(
-            Arrays.asList("login", "register", "operation", "clear"));
+            Arrays.asList("login", "register", "subscribe", "diretorio", "clear terminal"));
+
+    private static List<String> OPERATIONS_OPTIONS = new ArrayList<>(Arrays.asList("subscribe", "update position",
+            "report infection", "number of users in location", "clear terminal"));
 
     // --------------------------------------------------------------------------
 
@@ -61,12 +67,12 @@ public class GUI {
 
     public static void success(String succString) {
 
-        System.out.println(ANSI_GREEN + "success! " + succString + ANSI_RESET);
+        System.out.println(ANSI_GREEN + succString + ANSI_RESET);
     }
 
     public static void warning_no_nl(String msg) {
 
-        System.out.print(ANSI_BLUE + msg + ANSI_RESET);
+        System.out.print(ANSI_YELLOW + msg + ANSI_RESET);
     }
 
     public static void warning_nl(String msg) {
@@ -78,17 +84,40 @@ public class GUI {
         System.out.print(color + tty + "> " + ANSI_RESET);
     }
 
+    public static void user_stats(User user) {
+
+        String uname = ANSI_GREEN + "username: " + ANSI_RESET + ANSI_RED + user.getUsername() + ANSI_RESET;
+        String locatedX = ANSI_RED + user.getPos().getPosX() + ANSI_RESET;
+        String locatedY = ANSI_RED + user.getPos().getPosY() + ANSI_RESET;
+
+        System.out.println(uname + " | " + ANSI_GREEN + "located @ {" + ANSI_RESET + locatedX + "," + locatedY
+                + ANSI_GREEN + "}" + ANSI_RESET);
+    }
+
     public static void options(List<String> options, String color) {
 
-        for (int opt = 0; opt < options.size(); opt++) {
-            System.out.println(color + "[" + opt + "] " + options.get(opt) + ANSI_RESET);
+        for (int i = 0; i < options.size(); i++) {
+            System.out.println(color + "[" + i + "] " + (options.get(i)) + ANSI_RESET);
         }
     }
 
-    public static void main_menu() {
+    public static void main_menu(String type, User user) {
 
-        display_banner_file(MAIN_MENU_BANNER, ANSI_BLUE);
+        display_banner_file(MAIN_MENU_BANNER, ANSI_CYAN);
+
         System.out.println();
-        options(STARTUP_OPTIONS, ANSI_WHITE);
+
+        switch (type) {
+            case "startup":
+                options(STARTUP_OPTIONS, ANSI_WHITE);
+                break;
+            case "operations":
+                user_stats(user);
+                System.out.println();
+                options(OPERATIONS_OPTIONS, ANSI_WHITE);
+                break;
+        }
+
+        System.out.println();
     }
 }

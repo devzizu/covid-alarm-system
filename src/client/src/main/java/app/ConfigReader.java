@@ -22,6 +22,7 @@ public class ConfigReader {
         this.portas = toml.getTable("ports").toMap();
         this.distritos = toml.getTable("local").toMap();
         this.def = toml.getTable("default").toMap();
+
     }
 
     public String getPort(String key_principal, String key_secundaria) {
@@ -52,5 +53,21 @@ public class ConfigReader {
         return n;
     }
 
+    public boolean containsDistrict(String district) {
+        return this.distritos.containsKey("\"" + district + "\"");
+    }
+
+    public int getLimitSubs() {
+        String n = null;
+        n = (String) def.get("\"LIMIT_SUBSCRIPTIONS\"").toString();
+        return Integer.parseInt(n);
+    }
+
+    public int getMapSize() {
+
+        String n = null;
+        n = (String) def.get("\"MAP_SIZE\"").toString();
+        return Integer.parseInt(n);
+    }
 
 }

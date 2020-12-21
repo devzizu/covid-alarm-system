@@ -7,9 +7,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-import org.zeromq.SocketType;
 import org.zeromq.ZContext;
-import org.zeromq.ZMQ;
 
 import app.ConfigReader;
 import app.client.gui.GUI;
@@ -17,10 +15,10 @@ import app.client.gui.GUI;
 public class Client {
 
     static ConfigReader config = new ConfigReader();
-
     static int PORT_FRONTEND = Integer.parseInt(config.getPort("ports", "FRONTEND"));
 
-    static Notifications notificationThread;
+    static Notifications notificationThread = null;
+    static API API = null;
 
     public static boolean recv_notifications(BufferedReader frontendSocketReader) throws IOException {
 
@@ -74,6 +72,8 @@ public class Client {
             // Request and start notification sub zmq socket
             boolean canReceiveNotifications = recv_notifications(reader);
 
+            API = new API(reader, writer, notificationThread);
+
             if (!canReceiveNotifications) {
                 socket.close();
                 return;
@@ -86,26 +86,25 @@ public class Client {
 
             String option = "";
 
-            // GUI.clear_terminal();
-            GUI.main_menu();
+            GUI.clear_terminal();
+            GUI.main_menu("startup", null);
 
             boolean stop_application = false;
-            // boolean logged = false;
 
             while (!stop_application) {
 
-                GUI.command_prompt("cmd", GUI.ANSI_BLUE);
-                option = stdIn.readLine();
+                GUI.command_prompt("cmd", GUI.ANSI_GREEN);
 
                 int option_selected = -1;
                 try {
+                    option = stdIn.readLine();
                     option_selected = Integer.parseInt(option);
                 } catch (NumberFormatException e) {
-                    GUI.error("operation not permitted...");
+                    GUI.error("number_option_invalid");
                     continue;
                 }
 
-                String username, password, residencia, request, response;
+                String username, password, residencia, response, subscription, position;
 
                 switch (option_selected) {
 
@@ -117,26 +116,38 @@ public class Client {
                         GUI.warning_no_nl("password: ");
                         password = stdIn.readLine();
 
-                        request = "login " + username + " " + password;
+                        response = API.login_frontend(username, password);
 
-                        writer.println(request);
-                        writer.flush();
+                        if (response.startsWith("OK")) {
 
-                        // if login OK
-                        // {ok,"mirs"}
+                            GUI.success(response);
 
-                        // wait until response from frontend
-                        response = reader.readLine();
+                            GUI.warning_no_nl("position (ex. 5 10): ");
+                            position = stdIn.readLine();
 
-                        if (response.startsWith("{ok")) {
+                            Position readPosition = Tools.get_position_from_string(position, " ");
 
-                            notificationThread.subscribe(username);
-                            notificationThread.subscribe("Porto");
+                            if (readPosition == null) {
+                                GUI.error("ERROR:invalid_position");
+                                break;
+                            } else
+                                GUI.success("OK:position_syntax_valid");
 
-                            GUI.success("loggin successfull!");
-                        } else {
-                            GUI.error("loggin failed!");
-                        }
+                            response = API.register_backend(username, readPosition.getPosX(), readPosition.getPosY());
+
+                            if (response.startsWith("OK")) {
+
+                                GUI.success(response);
+
+                                User userLogged = new User(username, readPosition);
+
+                                process_operations(stdIn, userLogged);
+
+                            } else
+                                GUI.error(response);
+
+                        } else
+                            GUI.error(response);
 
                         break;
 
@@ -150,50 +161,47 @@ public class Client {
                         GUI.warning_no_nl("residencia: ");
                         residencia = stdIn.readLine();
 
-                        request = "create " + username + " " + password + " " + residencia;
+                        response = API.register_frontend(username, password, residencia);
 
-                        writer.println(request);
-                        writer.flush();
-
-                        // if login OK
-                        // {ok,"mirs"}
-
-                        // wait until response from frontend
-                        response = reader.readLine();
-
-                        if (response.endsWith("login_pls}")) {
-
-                            GUI.warning_nl("registration done, loggin please!");
-                        } else {
-                            GUI.error("registration failed!");
-                        }
+                        if (response.startsWith("OK"))
+                            GUI.success(response);
+                        else
+                            GUI.error(response);
 
                         break;
 
-                    // operation
+                    // subscribe
                     case 2:
 
-                        GUI.command_prompt("operation", GUI.ANSI_GREEN);
+                        GUI.warning_no_nl("district: ");
+                        subscription = stdIn.readLine();
 
-                        request = stdIn.readLine();
+                        response = API.subscribeDistrict(subscription);
 
-                        writer.println(request);
-                        writer.flush();
-
-                        response = reader.readLine();
-
-                        GUI.warning_nl(response);
+                        if (response.startsWith("OK"))
+                            GUI.success(response);
+                        else
+                            GUI.error(response);
 
                         break;
 
-                    // clear
                     case 3:
+
+                        GUI.success("not implemented yet");
+                        // process_diretorio();
+
+                        break;
+
+                    // clear terminal
+                    case 4:
                         GUI.clear_terminal();
-                        GUI.main_menu();
+                        GUI.main_menu("startup", null);
                         continue;
 
                     default:
-                        GUI.error("operation not permitted...");
+
+                        GUI.error("number_option_invalid");
+
                         continue;
                 }
             }
@@ -207,36 +215,69 @@ public class Client {
 
         System.out.println("[Client:frontend] app stoped...");
     }
-}
 
-class Notifications extends Thread {
-    ZContext context;
-    int pub_port;
-    ZMQ.Socket xpubSocket;
+    public static void process_operations(BufferedReader stdIn, User user) throws Exception {
 
-    Notifications(ZContext context, int pub_port) {
-        this.context = context;
-        this.pub_port = pub_port;
-    }
+        String option = "";
 
-    public void run() {
+        GUI.clear_terminal();
+        GUI.main_menu("operations", user);
 
-        try (ZMQ.Socket xpubS = context.createSocket(SocketType.SUB)) {
+        boolean stop_application = false;
 
-            this.xpubSocket = xpubS;
+        while (!stop_application) {
 
-            this.xpubSocket.connect("tcp://localhost:" + this.pub_port);
+            GUI.command_prompt("cmd", GUI.ANSI_GREEN);
 
-            while (true) {
-                byte[] msg = this.xpubSocket.recv();
-                String message = new String(msg);
-                System.out.println("[Client:app] Notification! data = " + message);
+            int option_selected = -1;
+            try {
+                option = stdIn.readLine();
+                option_selected = Integer.parseInt(option);
+            } catch (NumberFormatException e) {
+                GUI.error("number_option_invalid");
+                continue;
+            }
+
+            switch (option_selected) {
+
+                // subscribe
+                case 0:
+                    GUI.success("not implemented yet");
+                    break;
+
+                // update position
+                case 1:
+                    GUI.success("not implemented yet");
+                    break;
+
+                // report infection
+                case 2:
+                    GUI.success("not implemented yet");
+                    break;
+
+                // number of users in location
+                case 3:
+                    GUI.success("not implemented yet");
+                    break;
+
+                // clear terminal
+                case 4:
+                    GUI.clear_terminal();
+                    GUI.main_menu("operations", user);
+                    continue;
+
+                default:
+
+                    GUI.error("number_option_invalid");
+
+                    continue;
             }
         }
 
+        // return this function when logout
     }
 
-    public void subscribe(String subtopic) {
-        this.xpubSocket.subscribe(subtopic);
+    public static void process_diretorio() {
+        //
     }
 }
