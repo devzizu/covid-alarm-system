@@ -5,10 +5,17 @@ public class User {
 
     private String username;
     private Position pos;
+    public String district;
 
     public User(String username, Position pos) {
         this.username = username;
         this.pos = pos;
+    }
+
+    public User() {
+        this.username = "undef";
+        this.pos = null;
+        this.district = "undef";
     }
 
     public String getUsername() {
@@ -21,6 +28,10 @@ public class User {
 
     public void setPos(Position p) {
         this.pos = p;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     @Override

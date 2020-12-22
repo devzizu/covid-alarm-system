@@ -6,10 +6,13 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.List;
 
 import org.zeromq.ZContext;
 
 import app.ConfigReader;
+import app.api.InfRatio;
+import app.api.Top5Positions;
 import app.client.gui.GUI;
 
 public class Client {
@@ -19,6 +22,9 @@ public class Client {
 
     static Notifications notificationThread = null;
     static DefaultAPI DefaultAPI = null;
+    static DiretorioAPI DiretorioAPI = null;
+
+    static User userLogged;
 
     public static boolean recv_notifications(BufferedReader frontendSocketReader) throws IOException {
 
@@ -73,6 +79,7 @@ public class Client {
             boolean canReceiveNotifications = recv_notifications(reader);
 
             DefaultAPI = new DefaultAPI(reader, writer, notificationThread);
+            DiretorioAPI = new DiretorioAPI();
 
             if (!canReceiveNotifications) {
                 socket.close();
@@ -87,7 +94,7 @@ public class Client {
             String option = "";
 
             GUI.clear_terminal();
-            GUI.main_menu("startup", null);
+            GUI.main_menu("startup", null, DefaultAPI, false);
 
             boolean stop_application = false;
 
@@ -100,7 +107,8 @@ public class Client {
                     option = stdIn.readLine();
                     option_selected = Integer.parseInt(option);
                 } catch (NumberFormatException e) {
-                    GUI.error("number_option_invalid");
+                    if (option.length() != 0)
+                        GUI.error("number_option_invalid");
                     continue;
                 }
 
@@ -122,16 +130,24 @@ public class Client {
 
                             GUI.success(response);
 
-                            GUI.warning_no_nl("position (ex. 5 10): ");
-                            position = stdIn.readLine();
+                            Position readPosition = null;
+                            boolean firstIter = true;
 
-                            Position readPosition = Tools.get_position_from_string(position, " ");
+                            do {
 
-                            if (readPosition == null) {
-                                GUI.error("ERROR:invalid_position");
-                                break;
-                            } else
-                                GUI.success("OK:position_syntax_valid");
+                                if (!firstIter)
+                                    GUI.error("invalid_position");
+
+                                GUI.warning_no_nl("position (ex. 5 10): ");
+                                position = stdIn.readLine();
+
+                                readPosition = Tools.get_position_from_string(position, " ");
+
+                                firstIter = false;
+
+                            } while (readPosition == null);
+
+                            GUI.success("OK:position_syntax_valid");
 
                             response = DefaultAPI.register_backend(username, readPosition.getPosX(),
                                     readPosition.getPosY());
@@ -140,13 +156,15 @@ public class Client {
 
                                 GUI.success(response);
 
-                                User userLogged = new User(username, readPosition);
-
+                                userLogged.setPos(readPosition);
+                                userLogged.setUsername(username);
                                 process_operations(stdIn, userLogged);
 
-                                GUI.error("You should be isolated now!!!");
-
                                 stop_application = true;
+
+                                process_infected(stdIn);
+
+                                return;
 
                             } else
                                 GUI.error(response);
@@ -168,9 +186,14 @@ public class Client {
 
                         response = DefaultAPI.register_frontend(username, password, residencia);
 
-                        if (response.startsWith("OK"))
+                        if (response.startsWith("OK")) {
                             GUI.success(response);
-                        else
+                            GUI.warning_nl("You need to login now!");
+                            String dist = Character.toUpperCase(residencia.charAt(0))
+                                    + residencia.substring(1).toLowerCase();
+                            userLogged = new User();
+                            userLogged.district = dist;
+                        } else
                             GUI.error(response);
 
                         break;
@@ -192,16 +215,16 @@ public class Client {
 
                     case 3:
 
-                        process_diretorio(stdIn);
-
-                        GUI.success("returning to main menu...");
+                        process_diretorio(stdIn, false);
+                        GUI.clear_terminal();
+                        GUI.main_menu("startup", null, DefaultAPI, false);
 
                         break;
 
                     // clear terminal
                     case 4:
                         GUI.clear_terminal();
-                        GUI.main_menu("startup", null);
+                        GUI.main_menu("startup", null, DefaultAPI, false);
                         continue;
 
                     default:
@@ -227,7 +250,7 @@ public class Client {
         String option = "";
 
         GUI.clear_terminal();
-        GUI.main_menu("operations", user);
+        GUI.main_menu("operations", user, DefaultAPI, false);
 
         boolean stop_application = false;
 
@@ -240,7 +263,8 @@ public class Client {
                 option = stdIn.readLine();
                 option_selected = Integer.parseInt(option);
             } catch (NumberFormatException e) {
-                GUI.error("number_option_invalid");
+                if (option.length() != 0)
+                    GUI.error("number_option_invalid");
                 continue;
             }
 
@@ -297,13 +321,17 @@ public class Client {
 
                     GUI.warning_nl("reporting infection...");
 
-                    response = DefaultAPI.update_position_backend(user.getUsername(), readPosition);
+                    response = DefaultAPI.report_infection_backend(user.getUsername());
 
                     if (response.startsWith("OK")) {
+
+                        notificationThread.unsubscribe(user.getUsername());
 
                         GUI.success(response);
 
                         stop_application = true;
+
+                        return;
 
                     } else {
 
@@ -330,7 +358,7 @@ public class Client {
                     int nr_users = DefaultAPI.nrusers_location_backend(user.getUsername(), readPosition);
 
                     if (nr_users >= 0)
-                        GUI.show_users_in_location(nr_users);
+                        GUI.show_users_in_location(nr_users, "");
                     else
                         GUI.error("could_not_request_that_position");
 
@@ -339,17 +367,17 @@ public class Client {
                 // diretorio
                 case 4:
 
-                    process_diretorio(stdIn);
+                    process_diretorio(stdIn, false);
 
-                    GUI.success("returning to main menu...");
-
-                    continue;
+                    GUI.clear_terminal();
+                    GUI.main_menu("operations", user, DefaultAPI, false);
+                    break;
 
                 // clear terminal
                 case 5:
 
                     GUI.clear_terminal();
-                    GUI.main_menu("operations", user);
+                    GUI.main_menu("operations", user, DefaultAPI, false);
 
                     continue;
 
@@ -362,12 +390,12 @@ public class Client {
         }
     }
 
-    public static void process_diretorio(BufferedReader stdIn) throws IOException {
+    public static void process_diretorio(BufferedReader stdIn, boolean infected) throws Exception {
 
         String option = "";
 
         GUI.clear_terminal();
-        GUI.main_menu("diretorio", null);
+        GUI.main_menu("diretorio", null, DefaultAPI, infected);
 
         boolean stop_application = false;
 
@@ -380,34 +408,156 @@ public class Client {
                 option = stdIn.readLine();
                 option_selected = Integer.parseInt(option);
             } catch (NumberFormatException e) {
-                GUI.error("number_option_invalid");
+                if (option.length() != 0)
+                    GUI.error("number_option_invalid");
                 continue;
             }
+
+            String distRead, distSanitized;
 
             switch (option_selected) {
 
                 // number of users
                 case 0:
 
+                    GUI.warning_no_nl("district: ");
+                    distRead = stdIn.readLine();
+
+                    distSanitized = Character.toUpperCase(distRead.charAt(0)) + distRead.substring(1).toLowerCase();
+
+                    if (config.containsDistrict(distSanitized)) {
+
+                        GUI.warning_nl(
+                                "requesting GET / " + config.getDiretorioURI() + "/users?district=" + distSanitized);
+
+                        int nr_users = DiretorioAPI.getNUsersDistrict(distSanitized);
+
+                        if (nr_users == -1) {
+
+                            GUI.error("could_not_make_request");
+
+                        } else {
+
+                            GUI.show_users_in_location(nr_users, "");
+                        }
+
+                    } else {
+
+                        GUI.error("invalid_district_specified");
+
+                    }
+
                     break;
 
                 // number of infected users
                 case 1:
+
+                    GUI.warning_no_nl("district: ");
+                    distRead = stdIn.readLine();
+
+                    distSanitized = Character.toUpperCase(distRead.charAt(0)) + distRead.substring(1).toLowerCase();
+
+                    if (config.containsDistrict(distSanitized)) {
+
+                        GUI.warning_nl("requesting GET / " + config.getDiretorioURI() + "/infectedUsers?district="
+                                + distSanitized);
+
+                        int nr_users = DiretorioAPI.getNInfected(distSanitized);
+
+                        if (nr_users == -1) {
+
+                            GUI.error("could_not_make_request");
+
+                        } else {
+
+                            GUI.show_users_in_location(nr_users, " infected");
+                        }
+
+                    } else {
+
+                        GUI.error("invalid_district_specified");
+                    }
 
                     break;
 
                 // top 5 districts (infected ratio)
                 case 2:
 
+                    GUI.warning_nl("requesting GET / " + config.getDiretorioURI() + "/top5InfRatio");
+
+                    List<InfRatio> top5infected = DiretorioAPI.getTop5InfRatio();
+
+                    if (top5infected == null) {
+
+                        GUI.error("could_not_make_request");
+
+                    } else {
+                        boolean shouldShow = top5infected.stream().anyMatch(t5 -> t5.infectedRatio > 0.0);
+
+                        if (!shouldShow) {
+
+                            GUI.success("there result is an empty list.");
+                            break;
+                        }
+
+                        int topIndex = 1;
+                        for (InfRatio ifr : top5infected) {
+                            System.out.println(GUI.ANSI_CYAN + "[#" + topIndex + "]" + GUI.ANSI_RESET + " District: "
+                                    + GUI.ANSI_GREEN + ifr.distrito + GUI.ANSI_RESET + ", ratio: " + GUI.ANSI_CYAN
+                                    + ifr.infectedRatio + GUI.ANSI_RESET + "%");
+                            topIndex++;
+                        }
+                    }
+
                     break;
 
                 // top 5 districts (number of users)
                 case 3:
 
+                    GUI.warning_nl("requesting GET / " + config.getDiretorioURI() + "/top5Locations");
+
+                    List<Top5Positions> top5Locations = DiretorioAPI.getTop5Locations();
+
+                    if (top5Locations.isEmpty()) {
+
+                        GUI.success("there result is an empty list.");
+                        break;
+                    }
+
+                    if (top5Locations == null) {
+
+                        GUI.error("could_not_make_request");
+
+                    } else {
+                        int topIndex = 1;
+                        for (Top5Positions ifr : top5Locations) {
+                            System.out.println(GUI.ANSI_CYAN + "[#" + topIndex + "]" + GUI.ANSI_RESET + " District: "
+                                    + GUI.ANSI_GREEN + ifr.district + GUI.ANSI_RESET + " has record " + GUI.ANSI_CYAN
+                                    + ifr.record + GUI.ANSI_RESET + " @ {" + GUI.ANSI_RED + ifr.positionX
+                                    + GUI.ANSI_RESET + "," + GUI.ANSI_RED + +ifr.positionY + GUI.ANSI_RESET + "}.");
+
+                            topIndex++;
+                        }
+                    }
+
                     break;
 
                 // users contact average
                 case 4:
+
+                    GUI.warning_nl("requesting GET / " + config.getDiretorioURI() + "/contactAvg");
+
+                    double avg = DiretorioAPI.getContactAvg();
+
+                    if (avg == -1) {
+
+                        GUI.error("could_not_make_request");
+
+                    } else {
+
+                        System.out
+                                .println("Average global users contact ratio " + GUI.ANSI_CYAN + avg + GUI.ANSI_RESET);
+                    }
 
                     break;
 
@@ -415,7 +565,82 @@ public class Client {
                 case 5:
 
                     GUI.clear_terminal();
-                    GUI.main_menu("diretorio", null);
+                    GUI.main_menu("diretorio", null, DefaultAPI, infected);
+
+                    continue;
+
+                // clear terminal
+                case 6:
+
+                    return;
+
+                default:
+
+                    GUI.error("number_option_invalid");
+
+                    continue;
+            }
+
+        }
+    }
+
+    public static void process_infected(BufferedReader stdIn) throws Exception {
+
+        String option = "";
+
+        GUI.clear_terminal();
+        GUI.main_menu("infected", null, DefaultAPI, true);
+
+        boolean stop_application = false;
+
+        while (!stop_application) {
+
+            GUI.command_prompt("cmd", GUI.ANSI_GREEN);
+
+            int option_selected = -1;
+            try {
+                option = stdIn.readLine();
+                option_selected = Integer.parseInt(option);
+            } catch (NumberFormatException e) {
+                if (option.length() != 0)
+                    GUI.error("number_option_invalid");
+                continue;
+            }
+
+            String subscription, response;
+
+            switch (option_selected) {
+
+                // subscribe
+                case 0:
+
+                    GUI.warning_no_nl("district: ");
+                    subscription = stdIn.readLine();
+
+                    response = DefaultAPI.subscribeDistrict(subscription);
+
+                    if (response.startsWith("OK"))
+                        GUI.success(response);
+                    else
+                        GUI.error(response);
+
+                    break;
+
+                // diretorio
+                case 1:
+
+                    process_diretorio(stdIn, true);
+
+                    GUI.clear_terminal();
+                    GUI.main_menu("infected", null, DefaultAPI, true);
+
+                    break;
+
+                // clear terminal
+                case 2:
+
+                    GUI.clear_terminal();
+                    GUI.main_menu("infected", null, DefaultAPI, true);
 
                     continue;
 

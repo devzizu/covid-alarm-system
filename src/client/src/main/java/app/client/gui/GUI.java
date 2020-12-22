@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import app.api.InfRatio;
+import app.client.DefaultAPI;
 import app.client.User;
 
 public class GUI {
@@ -28,6 +30,8 @@ public class GUI {
 
     // banner files
     private static String MAIN_MENU_BANNER = "banners/main_menu";
+    private static String SEPARATOR_BANNER = "banners/separator";
+    private static String INFECTED_BANNER = "banners/infected";
 
     // --------------------------------------------------------------------------
 
@@ -39,7 +43,10 @@ public class GUI {
 
     private static List<String> DIRETORIO_OPTIONS = new ArrayList<>(
             Arrays.asList("number of users", "number of infected users", "top 5 districts (infected ratio)",
-                    "top 5 districts (number of users)", "users contact average"));
+                    "top 5 districts (number of users)", "users contact average", "clear terminal", "< back"));
+
+    private static List<String> INFECTED_OPTIONS = new ArrayList<>(
+            Arrays.asList("subscribe", "diretorio", "clear terminal"));
 
     // --------------------------------------------------------------------------
 
@@ -88,8 +95,8 @@ public class GUI {
         System.out.print(color + tty + "> " + ANSI_RESET);
     }
 
-    public static void show_users_in_location(int value) {
-        System.out.println(ANSI_WHITE + "There are " + ANSI_RESET + ANSI_RED + value + ANSI_RESET + ANSI_WHITE
+    public static void show_users_in_location(int value, String append) {
+        System.out.println(ANSI_WHITE + "There are " + ANSI_RESET + ANSI_RED + value + ANSI_RESET + ANSI_WHITE + append
                 + " users in that location." + ANSI_RESET);
     }
 
@@ -99,37 +106,84 @@ public class GUI {
         String locatedX = ANSI_RED + user.getPos().getPosX() + ANSI_RESET;
         String locatedY = ANSI_RED + user.getPos().getPosY() + ANSI_RESET;
 
-        System.out.println(uname + " | " + ANSI_GREEN + "located @ {" + ANSI_RESET + locatedX + "," + locatedY
-                + ANSI_GREEN + "}" + ANSI_RESET + "(clear terminal to update information)");
+        System.out.println(uname + " | " + ANSI_GREEN + user.district + " @ " + " {" + ANSI_RESET + locatedX + ","
+                + locatedY + ANSI_GREEN + "}" + ANSI_RESET + " \n");
     }
 
     public static void options(List<String> options, String color) {
 
         for (int i = 0; i < options.size(); i++) {
-            System.out.println(color + "[" + i + "] " + (options.get(i)) + ANSI_RESET);
+            String opt = options.get(i);
+            if (opt.equals("< back") || opt.equals("clear terminal"))
+                System.out.println("[" + i + "] " + ANSI_YELLOW + (options.get(i)) + ANSI_RESET);
+            else
+                System.out.println(color + "[" + i + "] " + (options.get(i)) + ANSI_RESET);
         }
     }
 
-    public static void main_menu(String type, User user) {
+    public static void display_list(String color, String type, List<String> subs) {
 
-        display_banner_file(MAIN_MENU_BANNER, ANSI_CYAN);
+        System.out.print(color + type + " = {");
+        for (int i = 0; i < subs.size(); i++) {
+            String s = subs.get(i);
+            if (i == subs.size() - 1)
+                System.out.print(s);
+            else
+                System.out.print(s + ",");
+        }
+        System.out.print(color + "}\n");
+    }
 
-        System.out.println();
+    public static void main_menu(String type, User user, DefaultAPI DefaultAPI, boolean isInfected) {
 
-        switch (type) {
-            case "startup":
-                options(STARTUP_OPTIONS, ANSI_WHITE);
-                break;
-            case "operations":
-                user_stats(user);
+        if (type.equals("infected")) {
+
+            warning_nl("\nYou should be isolated now!!!\n");
+            display_banner_file(INFECTED_BANNER, ANSI_RED);
+            display_banner_file(SEPARATOR_BANNER, ANSI_PURPLE);
+            display_list(ANSI_CYAN, "subscriptions", DefaultAPI.get_subscriptions_list());
+            display_banner_file(SEPARATOR_BANNER, ANSI_PURPLE);
+            System.out.println();
+            options(INFECTED_OPTIONS, ANSI_WHITE);
+            System.out.println();
+
+        } else {
+
+            if (!isInfected) {
+
+                display_banner_file(MAIN_MENU_BANNER, ANSI_CYAN);
                 System.out.println();
-                options(OPERATIONS_OPTIONS, ANSI_WHITE);
-                break;
-            case "diretorio":
-                options(DIRETORIO_OPTIONS, ANSI_WHITE);
-                break;
+            } else {
+                warning_nl("\nYou should be isolated now!!!\n");
+                display_banner_file(INFECTED_BANNER, ANSI_RED);
+            }
+
+            display_banner_file(SEPARATOR_BANNER, ANSI_PURPLE);
+            display_list(ANSI_CYAN, "subscriptions", DefaultAPI.get_subscriptions_list());
+            display_banner_file(SEPARATOR_BANNER, ANSI_PURPLE);
+
+            System.out.println();
+
+            switch (type) {
+                case "startup":
+                    options(STARTUP_OPTIONS, ANSI_WHITE);
+                    break;
+                case "operations":
+                    user_stats(user);
+                    display_banner_file(SEPARATOR_BANNER, ANSI_PURPLE);
+                    options(OPERATIONS_OPTIONS, ANSI_WHITE);
+                    break;
+                case "diretorio":
+                    options(DIRETORIO_OPTIONS, ANSI_WHITE);
+                    System.out.println();
+                    break;
+                case "infected":
+                    options(INFECTED_OPTIONS, ANSI_WHITE);
+                    break;
+            }
         }
 
-        System.out.println();
+        display_banner_file(SEPARATOR_BANNER, ANSI_PURPLE);
+        System.out.println("[clear terminal to update info]\n");
     }
 }

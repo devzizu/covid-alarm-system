@@ -34,4 +34,8 @@ public class Notifications extends Thread {
     public void subscribe(String subtopic) {
         this.xpubSocket.subscribe(subtopic);
     }
+
+    public void unsubscribe(String subtopic) {
+        this.xpubSocket.unsubscribe(subtopic);
+    }
 }

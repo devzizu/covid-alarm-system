@@ -1,6 +1,9 @@
 package app.client;
 
 import java.net.http.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import app.ConfigReader;
 
@@ -8,15 +11,13 @@ import app.api.*;
 
 import java.net.*;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import com.fasterxml.jackson.databind.*;
 
 public class DiretorioAPI {
 
-    ConfigReader config = new ConfigReader();
+    private static ConfigReader config = new ConfigReader();
 
-    HttpClient httpclient = HttpClient.newHttpClient();
+    private static HttpClient httpclient = HttpClient.newHttpClient();
 
     public int getNUsersDistrict(String district) throws Exception {
 
@@ -42,42 +43,111 @@ public class DiretorioAPI {
         return result;
     }
 
-    public String getNInfected(String district) throws Exception {
+    public int getNInfected(String district) throws Exception {
+
+        int result = -1;
 
         String uri = config.getDiretorioURI() + "/infectedUsers?district=" + district;
 
-        return genericRequest(uri);
+        String response = genericRequest(uri);
+
+        if (response.startsWith("OK")) {
+            String fields[] = response.split("_:");
+
+            String body = fields[1];
+
+            ObjectMapper om = new ObjectMapper();
+
+            InfUsers r = om.readValue(body, InfUsers.class);
+
+            result = r.infectedUsers;
+
+        }
+
+        return result;
 
     }
 
-    public String getTop5InfRatio() throws Exception {
+    public List<InfRatio> getTop5InfRatio() throws Exception {
+
+        List<InfRatio> result = null;
+
         String uri = config.getDiretorioURI() + "/top5InfRatio";
 
-        return genericRequest(uri);
+        String response = genericRequest(uri);
+
+        if (response.startsWith("OK")) {
+            String fields[] = response.split("_:");
+
+            String body = fields[1];
+
+            ObjectMapper om = new ObjectMapper();
+
+            InfRatio[] resultAux = om.readValue(body, InfRatio[].class);
+
+            result = new ArrayList<InfRatio>(Arrays.asList(resultAux));
+
+        }
+
+        return result;
 
     }
 
-    public String getTop5Locations() throws Exception {
+    public List<Top5Positions> getTop5Locations() throws Exception {
         String uri = config.getDiretorioURI() + "/top5Locations";
 
-        return genericRequest(uri);
+        List<Top5Positions> result = null;
+
+        String response = genericRequest(uri);
+
+        if (response.startsWith("OK")) {
+            String fields[] = response.split("_:");
+
+            String body = fields[1];
+
+            ObjectMapper om = new ObjectMapper();
+
+            Top5Positions[] resultAux = om.readValue(body, Top5Positions[].class);
+
+            result = new ArrayList<Top5Positions>(Arrays.asList(resultAux));
+
+        }
+
+        return result;
 
     }
 
-    public String getContactAvg() throws Exception {
+    public double getContactAvg() throws Exception {
         String uri = config.getDiretorioURI() + "/contactAvg";
 
-        return genericRequest(uri);
+        double result = -1;
+
+        String response = genericRequest(uri);
+
+        if (response.startsWith("OK")) {
+            String fields[] = response.split("_:");
+
+            String body = fields[1];
+
+            ObjectMapper om = new ObjectMapper();
+
+            ContactAvg r = om.readValue(body, ContactAvg.class);
+
+            result = r.contactAvg;
+
+        }
+
+        return result;
 
     }
 
-    public String genericRequest(String uri) throws Exception {
+    public static String genericRequest(String uri) throws Exception {
 
         StringBuilder result = new StringBuilder();
 
         HttpRequest get = HttpRequest.newBuilder().uri(URI.create(uri)).GET().build();
 
-        HttpResponse<String> response = this.httpclient.send(get, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = httpclient.send(get, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() == 200)
             result.append("OK_:").append(response.body());

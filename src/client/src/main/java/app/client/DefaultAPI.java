@@ -5,6 +5,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashSet;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import app.ConfigReader;
 
@@ -26,6 +28,10 @@ public class DefaultAPI {
         this.MAX_SUBS = config.getLimitSubs();
         this.MAP_SIZE = config.getMapSize();
         this.subscriptions = new HashSet<>();
+    }
+
+    public List<String> get_subscriptions_list() {
+        return this.subscriptions.stream().collect(Collectors.toList());
     }
 
     public String login_frontend(String username, String password) throws IOException {
@@ -105,7 +111,7 @@ public class DefaultAPI {
 
         StringBuilder sb_reply = new StringBuilder();
 
-        if (this.subscriptions.size() <= MAX_SUBS) {
+        if (this.subscriptions.size() < MAX_SUBS) {
 
             String sanitezed = Character.toUpperCase(district.charAt(0)) + district.substring(1).toLowerCase();
 
