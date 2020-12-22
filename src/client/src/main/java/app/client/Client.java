@@ -18,7 +18,7 @@ public class Client {
     static int PORT_FRONTEND = Integer.parseInt(config.getPort("ports", "FRONTEND"));
 
     static Notifications notificationThread = null;
-    static API API = null;
+    static DefaultAPI DefaultAPI = null;
 
     public static boolean recv_notifications(BufferedReader frontendSocketReader) throws IOException {
 
@@ -72,7 +72,7 @@ public class Client {
             // Request and start notification sub zmq socket
             boolean canReceiveNotifications = recv_notifications(reader);
 
-            API = new API(reader, writer, notificationThread);
+            DefaultAPI = new DefaultAPI(reader, writer, notificationThread);
 
             if (!canReceiveNotifications) {
                 socket.close();
@@ -116,7 +116,7 @@ public class Client {
                         GUI.warning_no_nl("password: ");
                         password = stdIn.readLine();
 
-                        response = API.login_frontend(username, password);
+                        response = DefaultAPI.login_frontend(username, password);
 
                         if (response.startsWith("OK")) {
 
@@ -133,7 +133,8 @@ public class Client {
                             } else
                                 GUI.success("OK:position_syntax_valid");
 
-                            response = API.register_backend(username, readPosition.getPosX(), readPosition.getPosY());
+                            response = DefaultAPI.register_backend(username, readPosition.getPosX(),
+                                    readPosition.getPosY());
 
                             if (response.startsWith("OK")) {
 
@@ -142,6 +143,10 @@ public class Client {
                                 User userLogged = new User(username, readPosition);
 
                                 process_operations(stdIn, userLogged);
+
+                                GUI.error("You should be isolated now!!!");
+
+                                stop_application = true;
 
                             } else
                                 GUI.error(response);
@@ -161,7 +166,7 @@ public class Client {
                         GUI.warning_no_nl("residencia: ");
                         residencia = stdIn.readLine();
 
-                        response = API.register_frontend(username, password, residencia);
+                        response = DefaultAPI.register_frontend(username, password, residencia);
 
                         if (response.startsWith("OK"))
                             GUI.success(response);
@@ -176,7 +181,7 @@ public class Client {
                         GUI.warning_no_nl("district: ");
                         subscription = stdIn.readLine();
 
-                        response = API.subscribeDistrict(subscription);
+                        response = DefaultAPI.subscribeDistrict(subscription);
 
                         if (response.startsWith("OK"))
                             GUI.success(response);
@@ -187,8 +192,9 @@ public class Client {
 
                     case 3:
 
-                        GUI.success("not implemented yet");
-                        // process_diretorio();
+                        process_diretorio(stdIn);
+
+                        GUI.success("returning to main menu...");
 
                         break;
 
@@ -238,32 +244,113 @@ public class Client {
                 continue;
             }
 
+            Position readPosition = new Position();
+            String response, subscription, position;
+
             switch (option_selected) {
 
                 // subscribe
                 case 0:
-                    GUI.success("not implemented yet");
+                    GUI.warning_no_nl("district: ");
+                    subscription = stdIn.readLine();
+
+                    response = DefaultAPI.subscribeDistrict(subscription);
+
+                    if (response.startsWith("OK"))
+                        GUI.success(response);
+                    else
+                        GUI.error(response);
+
                     break;
 
                 // update position
                 case 1:
-                    GUI.success("not implemented yet");
+
+                    GUI.warning_no_nl("position (ex.: 5 10): ");
+                    position = stdIn.readLine();
+
+                    readPosition = Tools.get_position_from_string(position, " ");
+
+                    if (readPosition == null) {
+                        GUI.error("invalid_position");
+                        break;
+                    } else
+                        GUI.success("OK:position_syntax_valid");
+
+                    response = DefaultAPI.update_position_backend(user.getUsername(), readPosition);
+
+                    if (response.startsWith("OK")) {
+
+                        GUI.success(response);
+                        user.setPos(readPosition);
+
+                    } else {
+
+                        GUI.error(response);
+                        GUI.error("user_position_not_updated");
+                    }
+
                     break;
 
                 // report infection
                 case 2:
-                    GUI.success("not implemented yet");
+
+                    GUI.warning_nl("reporting infection...");
+
+                    response = DefaultAPI.update_position_backend(user.getUsername(), readPosition);
+
+                    if (response.startsWith("OK")) {
+
+                        GUI.success(response);
+
+                        stop_application = true;
+
+                    } else {
+
+                        GUI.error("could not report infection...");
+                        GUI.error(response);
+                    }
+
                     break;
 
                 // number of users in location
                 case 3:
-                    GUI.success("not implemented yet");
+
+                    GUI.warning_no_nl("position (ex.: 5 10): ");
+                    position = stdIn.readLine();
+
+                    readPosition = Tools.get_position_from_string(position, " ");
+
+                    if (readPosition == null) {
+                        GUI.error("invalid_position");
+                        break;
+                    } else
+                        GUI.success("OK:position_syntax_valid");
+
+                    int nr_users = DefaultAPI.nrusers_location_backend(user.getUsername(), readPosition);
+
+                    if (nr_users >= 0)
+                        GUI.show_users_in_location(nr_users);
+                    else
+                        GUI.error("could_not_request_that_position");
+
                     break;
 
-                // clear terminal
+                // diretorio
                 case 4:
+
+                    process_diretorio(stdIn);
+
+                    GUI.success("returning to main menu...");
+
+                    continue;
+
+                // clear terminal
+                case 5:
+
                     GUI.clear_terminal();
                     GUI.main_menu("operations", user);
+
                     continue;
 
                 default:
@@ -273,11 +360,72 @@ public class Client {
                     continue;
             }
         }
-
-        // return this function when logout
     }
 
-    public static void process_diretorio() {
-        //
+    public static void process_diretorio(BufferedReader stdIn) throws IOException {
+
+        String option = "";
+
+        GUI.clear_terminal();
+        GUI.main_menu("diretorio", null);
+
+        boolean stop_application = false;
+
+        while (!stop_application) {
+
+            GUI.command_prompt("cmd", GUI.ANSI_GREEN);
+
+            int option_selected = -1;
+            try {
+                option = stdIn.readLine();
+                option_selected = Integer.parseInt(option);
+            } catch (NumberFormatException e) {
+                GUI.error("number_option_invalid");
+                continue;
+            }
+
+            switch (option_selected) {
+
+                // number of users
+                case 0:
+
+                    break;
+
+                // number of infected users
+                case 1:
+
+                    break;
+
+                // top 5 districts (infected ratio)
+                case 2:
+
+                    break;
+
+                // top 5 districts (number of users)
+                case 3:
+
+                    break;
+
+                // users contact average
+                case 4:
+
+                    break;
+
+                // clear terminal
+                case 5:
+
+                    GUI.clear_terminal();
+                    GUI.main_menu("diretorio", null);
+
+                    continue;
+
+                default:
+
+                    GUI.error("number_option_invalid");
+
+                    continue;
+            }
+
+        }
     }
 }

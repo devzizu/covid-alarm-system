@@ -176,14 +176,8 @@ public class DiretorioResource {
     @GET
     @Path("/top5Locations")
     public Response top5Locations() {
-        // TreeSet<Top5Positions> result = new TreeSet<>();
         return Response.ok(distritos.values().stream().flatMap(l -> l.top5.stream().map(e -> e.toTop5()))
                 .collect(Collectors.toCollection(() -> new TreeSet<Top5Positions>())).stream().limit(5)
                 .collect(Collectors.toList())).build();
-        // for(Distrito d : distritos.values()){
-        // result.addAll(d.top5.stream().map(e->e.toTop5()).collect(Collectors.toList()));
-        // }
-        // return
-        // Response.ok(result.stream().limit(5).collect(Collectors.toList())).build();
     }
 }

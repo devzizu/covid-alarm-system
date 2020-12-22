@@ -70,4 +70,11 @@ public class ConfigReader {
         return Integer.parseInt(n);
     }
 
+    public String getDiretorioURI() {
+
+        String n = null;
+        n = (String) def.get("\"DIRETORIO_RESOURCE\"").toString();
+        return n;
+    }
+
 }

@@ -35,7 +35,11 @@ public class GUI {
             Arrays.asList("login", "register", "subscribe", "diretorio", "clear terminal"));
 
     private static List<String> OPERATIONS_OPTIONS = new ArrayList<>(Arrays.asList("subscribe", "update position",
-            "report infection", "number of users in location", "clear terminal"));
+            "report infection", "number of users in location", "diretorio", "clear terminal"));
+
+    private static List<String> DIRETORIO_OPTIONS = new ArrayList<>(
+            Arrays.asList("number of users", "number of infected users", "top 5 districts (infected ratio)",
+                    "top 5 districts (number of users)", "users contact average"));
 
     // --------------------------------------------------------------------------
 
@@ -84,6 +88,11 @@ public class GUI {
         System.out.print(color + tty + "> " + ANSI_RESET);
     }
 
+    public static void show_users_in_location(int value) {
+        System.out.println(ANSI_WHITE + "There are " + ANSI_RESET + ANSI_RED + value + ANSI_RESET + ANSI_WHITE
+                + " users in that location." + ANSI_RESET);
+    }
+
     public static void user_stats(User user) {
 
         String uname = ANSI_GREEN + "username: " + ANSI_RESET + ANSI_RED + user.getUsername() + ANSI_RESET;
@@ -91,7 +100,7 @@ public class GUI {
         String locatedY = ANSI_RED + user.getPos().getPosY() + ANSI_RESET;
 
         System.out.println(uname + " | " + ANSI_GREEN + "located @ {" + ANSI_RESET + locatedX + "," + locatedY
-                + ANSI_GREEN + "}" + ANSI_RESET);
+                + ANSI_GREEN + "}" + ANSI_RESET + "(clear terminal to update information)");
     }
 
     public static void options(List<String> options, String color) {
@@ -115,6 +124,9 @@ public class GUI {
                 user_stats(user);
                 System.out.println();
                 options(OPERATIONS_OPTIONS, ANSI_WHITE);
+                break;
+            case "diretorio":
+                options(DIRETORIO_OPTIONS, ANSI_WHITE);
                 break;
         }
 

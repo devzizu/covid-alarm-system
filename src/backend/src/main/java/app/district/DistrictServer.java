@@ -388,7 +388,7 @@ class Worker extends Thread {
 
                         break;
 
-                    // pedido 4: rcv: <username>_n-users-in-pos_<x>_<y> | snd: <number>
+                    // pedido 4: rcv: <username>_n-users-in-pos_<x>_<y> | snd: OK_<number>
                     case "n-users-in-pos":
 
                         this.lockMap.lock();

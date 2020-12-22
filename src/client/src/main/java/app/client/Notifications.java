@@ -26,10 +26,9 @@ public class Notifications extends Thread {
             while (true) {
                 byte[] msg = this.xpubSocket.recv();
                 String message = new String(msg);
-                System.out.println("[Client:app] Notification! data = " + message);
+                System.out.println("\n[Client:app] Notification! data = " + message);
             }
         }
-
     }
 
     public void subscribe(String subtopic) {

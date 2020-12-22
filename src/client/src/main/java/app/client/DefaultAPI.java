@@ -8,7 +8,7 @@ import java.util.HashSet;
 
 import app.ConfigReader;
 
-public class API {
+public class DefaultAPI {
 
     private BufferedReader inputReader;
     private PrintWriter outputWriter;
@@ -19,7 +19,7 @@ public class API {
 
     static ConfigReader config = new ConfigReader();
 
-    public API(BufferedReader inputReader, PrintWriter outputWriter, Notifications nthread) {
+    public DefaultAPI(BufferedReader inputReader, PrintWriter outputWriter, Notifications nthread) {
         this.inputReader = inputReader;
         this.outputWriter = outputWriter;
         this.notificationsThread = nthread;
@@ -96,12 +96,13 @@ public class API {
             else
                 sb_reply.append(response);
         } else
-            sb_reply.append("positions_unavailable");
+            sb_reply.append("position_invalid");
 
         return sb_reply.toString();
     }
 
     public String subscribeDistrict(String district) {
+
         StringBuilder sb_reply = new StringBuilder();
 
         if (this.subscriptions.size() <= MAX_SUBS) {
@@ -126,5 +127,77 @@ public class API {
             sb_reply.append("too_many_subscriptions");
 
         return sb_reply.toString();
+    }
+
+    public String update_position_backend(String username, Position newPosition) throws IOException {
+
+        StringBuilder sb_reply = new StringBuilder();
+
+        int posX = newPosition.getPosX();
+        int posY = newPosition.getPosY();
+
+        if (posX < MAP_SIZE && posX > 0 && posY > 0 && posY < MAP_SIZE) {
+
+            StringBuilder sb_request = new StringBuilder();
+            sb_request.append(username).append("_track_").append(posX).append("_").append(posY);
+
+            this.outputWriter.println(sb_request.toString());
+            this.outputWriter.flush();
+
+            String response = this.inputReader.readLine();
+
+            if (response.startsWith("OK"))
+                sb_reply.append("OK:position_updated");
+            else
+                sb_reply.append(response);
+
+        } else
+            sb_reply.append("position_invalid");
+
+        return sb_reply.toString();
+    }
+
+    public String report_infection_backend(String username) throws IOException {
+
+        StringBuilder sb_request = new StringBuilder();
+        sb_request.append(username).append("_infected");
+
+        this.outputWriter.println(sb_request.toString());
+        this.outputWriter.flush();
+
+        String response = this.inputReader.readLine();
+
+        StringBuilder sb_reply = new StringBuilder();
+
+        if (response.startsWith("OK"))
+            sb_reply.append("OK:infection_reported_logout");
+        else
+            sb_reply.append(response);
+
+        return sb_reply.toString();
+    }
+
+    public int nrusers_location_backend(String username, Position requestedPosition) throws IOException {
+
+        StringBuilder sb_request = new StringBuilder();
+
+        int posX = requestedPosition.getPosX();
+        int posY = requestedPosition.getPosY();
+
+        sb_request.append(username).append("_n-users-in-pos_").append(posX).append("_").append(posY);
+
+        this.outputWriter.println(sb_request.toString());
+        this.outputWriter.flush();
+
+        String response = this.inputReader.readLine();
+
+        int nr_users = -1;
+        if (response.startsWith("OK")) {
+
+            String parts[] = response.split("_");
+            nr_users = Integer.parseInt(parts[1]);
+        }
+
+        return nr_users;
     }
 }
