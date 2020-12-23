@@ -86,6 +86,12 @@ handle_requests_req(ClientSocket, Socket_Req, Username) ->
             inet:setopts(ClientSocket, [{active, once}]),
             io:format("Sending operation to backend: ~p~n",
                       [OperationData]),
+            case string:tokens(OperationData,"_\r\n") of
+                [Username, "infected"] ->
+                    login_manager:logout(Username);
+                _ ->
+                    true
+            end,
             chumak:send(Socket_Req, OperationData),
             {ok, RecMessage} = chumak:recv(Socket_Req),
             gen_tcp:send(ClientSocket, RecMessage),

@@ -229,6 +229,10 @@ class Worker extends Thread {
                             uip.getUsersInPosition().stream().map(c -> contacts.add(c))
                                     .collect(Collectors.toCollection(HashSet::new));
 
+                            for (String c : contacts) {
+                                this.userPositions.get(new User(c, new Position())).add(username);
+                            }
+
                             this.userPositions.put(newUser, contacts);
                             uip.addUser(username);
 
@@ -383,9 +387,18 @@ class Worker extends Thread {
                                     // send notification of contact to all contacts
                                     contacts.stream().forEach(c -> _PUSH_SOCKET.send(c + "_" + "got-contact"));
 
-                                    // remove user from the application
-                                    this.userPositions.remove(new User(username, new Position()));
                                 }
+
+                                // remove user from the application
+                                User whereHeWas = this.userPositions.keySet().stream()
+                                        .filter(u -> u.getUsername().equals(username)).collect(Collectors.toList())
+                                        .get(0);
+
+                                Position lastPos = whereHeWas.getPos();
+
+                                this.globalMap[lastPos.getPosX()][lastPos.getPosY()].removeUser(username);
+
+                                this.userPositions.remove(new User(username, new Position()));
 
                                 socket_inproc.send("OK_LOGOUT\n");
 
@@ -413,10 +426,6 @@ class Worker extends Thread {
                                 int nr_users = this.globalMap[posx][posy].getNumberOfUsers();
 
                                 String response = "OK_" + nr_users + "\n";
-
-                                System.out.println(
-                                        "RESPOSTA TOP --------------------------------------------\n " + response);
-                                System.out.println(this.globalMap[posx][posy].toString());
 
                                 socket_inproc.send(response);
                             } else {
