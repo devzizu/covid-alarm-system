@@ -8,12 +8,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.zeromq.ZMQ;
+
 import app.ConfigReader;
 
 public class DefaultAPI {
 
-    private BufferedReader inputReader;
+    private ZMQ.Socket readerInprocSocket;
     private PrintWriter outputWriter;
+    private BufferedReader reader;
     private Notifications notificationsThread;
     private HashSet<String> subscriptions;
     private final int MAX_SUBS;
@@ -21,13 +24,15 @@ public class DefaultAPI {
 
     static ConfigReader config = new ConfigReader();
 
-    public DefaultAPI(BufferedReader inputReader, PrintWriter outputWriter, Notifications nthread) {
-        this.inputReader = inputReader;
+    public DefaultAPI(ZMQ.Socket readerInprocSocket, BufferedReader reader, PrintWriter outputWriter,
+            Notifications nthread) {
+        this.readerInprocSocket = readerInprocSocket;
         this.outputWriter = outputWriter;
         this.notificationsThread = nthread;
         this.MAX_SUBS = config.getLimitSubs();
         this.MAP_SIZE = config.getMapSize();
         this.subscriptions = new HashSet<>();
+        this.reader = reader;
     }
 
     public List<String> get_subscriptions_list() {
@@ -42,7 +47,7 @@ public class DefaultAPI {
         this.outputWriter.println(sb_request.toString());
         this.outputWriter.flush();
 
-        String response = this.inputReader.readLine();
+        String response = reader.readLine();
         StringBuilder sb_reply = new StringBuilder();
 
         if (response.startsWith("{ok")) {
@@ -71,7 +76,7 @@ public class DefaultAPI {
             this.outputWriter.println(sb_request.toString());
             this.outputWriter.flush();
 
-            String response = this.inputReader.readLine();
+            String response = reader.readLine();
 
             if (response.endsWith("login_pls}"))
                 sb_reply.append("OK:frontend_register_successfull");
@@ -87,7 +92,7 @@ public class DefaultAPI {
 
         StringBuilder sb_reply = new StringBuilder();
 
-        if (posX < MAP_SIZE && posX > 0 && posY > 0 && posY < MAP_SIZE) {
+        if (posX < MAP_SIZE && posX >= 0 && posY >= 0 && posY < MAP_SIZE) {
 
             StringBuilder sb_request = new StringBuilder();
             sb_request.append(username).append("_registo_").append(posX).append("_").append(posY);
@@ -95,7 +100,8 @@ public class DefaultAPI {
             this.outputWriter.println(sb_request.toString());
             this.outputWriter.flush();
 
-            String response = this.inputReader.readLine();
+            byte[] msgBytes = this.readerInprocSocket.recv();
+            String response = new String(msgBytes);
 
             if (response.startsWith("OK"))
                 sb_reply.append("OK:backend_register_successfull");
@@ -142,7 +148,7 @@ public class DefaultAPI {
         int posX = newPosition.getPosX();
         int posY = newPosition.getPosY();
 
-        if (posX < MAP_SIZE && posX > 0 && posY > 0 && posY < MAP_SIZE) {
+        if (posX < MAP_SIZE && posX >= 0 && posY >= 0 && posY < MAP_SIZE) {
 
             StringBuilder sb_request = new StringBuilder();
             sb_request.append(username).append("_track_").append(posX).append("_").append(posY);
@@ -150,7 +156,8 @@ public class DefaultAPI {
             this.outputWriter.println(sb_request.toString());
             this.outputWriter.flush();
 
-            String response = this.inputReader.readLine();
+            byte[] msgBytes = this.readerInprocSocket.recv();
+            String response = new String(msgBytes);
 
             if (response.startsWith("OK"))
                 sb_reply.append("OK:position_updated");
@@ -171,7 +178,8 @@ public class DefaultAPI {
         this.outputWriter.println(sb_request.toString());
         this.outputWriter.flush();
 
-        String response = this.inputReader.readLine();
+        byte[] msgBytes = this.readerInprocSocket.recv();
+        String response = new String(msgBytes);
 
         StringBuilder sb_reply = new StringBuilder();
 
@@ -195,7 +203,8 @@ public class DefaultAPI {
         this.outputWriter.println(sb_request.toString());
         this.outputWriter.flush();
 
-        String response = this.inputReader.readLine();
+        byte[] msgBytes = this.readerInprocSocket.recv();
+        String response = new String(msgBytes);
 
         int nr_users = -1;
         if (response.startsWith("OK")) {

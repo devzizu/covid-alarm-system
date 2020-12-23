@@ -6,8 +6,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.HashSet;
+import java.util.HashMap;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
+//import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
@@ -48,7 +49,7 @@ public class DistrictServer {
     // shared global map with shared lock
     static ReentrantLock GLOBAL_MAP_LOCK = new ReentrantLock();
     static UsersInPosition[][] GLOBAL_MATRIX = new UsersInPosition[MAP_SIZE][MAP_SIZE];
-    static ConcurrentHashMap<User, HashSet<String>> GLOBAL_USER_POSITION = new ConcurrentHashMap<>();
+    static HashMap<User, HashSet<String>> GLOBAL_USER_POSITION = new HashMap<>();
     static TreeSet<Record> top5Positions = new TreeSet<>();
 
     // --------------------------------------------------------------------------------------------------------------
@@ -142,7 +143,7 @@ class Worker extends Thread {
     private int XSUB_LAYER2;
     private ReentrantLock lockMap;
     private UsersInPosition[][] globalMap;
-    private ConcurrentHashMap<User, HashSet<String>> userPositions;
+    private HashMap<User, HashSet<String>> userPositions;
     private HttpClient httpclient;
     private TreeSet<Record> top5Positions;
     private static String DISTRICT;
@@ -152,8 +153,7 @@ class Worker extends Thread {
     private static String DIRETORIO_URI = config.getDiretorioURI();
 
     Worker(ZContext context, int n, ReentrantLock lockMap, UsersInPosition[][] globalmap,
-            ConcurrentHashMap<User, HashSet<String>> userPositions, String district, TreeSet<Record> tr, int xsub,
-            int limit) {
+            HashMap<User, HashSet<String>> userPositions, String district, TreeSet<Record> tr, int xsub, int limit) {
         this.context = context;
         this.n = n;
         this.lockMap = lockMap;
@@ -168,7 +168,8 @@ class Worker extends Thread {
 
     public void run() {
         try (ZMQ.Socket socket_inproc = context.createSocket(SocketType.REP);
-                ZMQ.Socket _XSUB_SOCKET = context.createSocket(SocketType.PUB)) {
+                ZMQ.Socket _XSUB_SOCKET = context.createSocket(SocketType.PUB);
+                ZMQ.Socket _PUSH_SOCKET = context.createSocket(SocketType.PUSH)) {
 
             // connect to inproc dealer
             socket_inproc.connect("inproc://threadWorkers");
@@ -176,6 +177,12 @@ class Worker extends Thread {
             // connect to notification brokers
             _XSUB_SOCKET.connect("tcp://*:" + this.XSUB_LAYER2);
             System.out.println("\t(worker " + n + ") xsub layer1 connected to port = " + this.XSUB_LAYER2);
+
+            int FRONTEND_PULL_PORT = Integer.parseInt(config.getPort("ports", "FRONTEND_PULL"));
+
+            _PUSH_SOCKET.connect("tcp://localhost:" + FRONTEND_PULL_PORT);
+
+            System.out.println("\t(worker " + n + ") connected (?) to frontend pull port = " + FRONTEND_PULL_PORT);
 
             while (true) {
 
@@ -218,7 +225,9 @@ class Worker extends Thread {
 
                             UsersInPosition uip = this.globalMap[posx][posy];
 
-                            HashSet<String> contacts = uip.getUsersInPosition();
+                            HashSet<String> contacts = new HashSet<>();
+                            uip.getUsersInPosition().stream().map(c -> contacts.add(c))
+                                    .collect(Collectors.toCollection(HashSet::new));
 
                             this.userPositions.put(newUser, contacts);
                             uip.addUser(username);
@@ -282,12 +291,15 @@ class Worker extends Thread {
                                 // save user last position
                                 Position oldPos = oldUser.getPos();
 
-                                this.globalMap[oldUser.getPos().getPosX()][oldUser.getPos().getPosY()]
-                                        .removeUser(username);
+                                UsersInPosition oldUIP = this.globalMap[oldUser.getPos().getPosX()][oldUser.getPos()
+                                        .getPosY()];
+                                oldUIP.removeUser(username);
+
                                 oldUser.setPos(new Position(posx, posy));
 
                                 HashSet<String> newContacts = this.globalMap[posx][posy].getUsersInPosition();
-                                this.userPositions.get(oldUser).addAll(newContacts);
+
+                                newContacts.forEach(c -> this.userPositions.get(oldUser).add(c));
 
                                 for (String c : newContacts) {
                                     this.userPositions.get(new User(c, new Position())).add(username);
@@ -330,7 +342,6 @@ class Worker extends Thread {
 
                                 genericContactInfected.put("district", DISTRICT);
                                 genericContactInfected.put("username", username);
-
                                 String json = "";
                                 try {
                                     json = objectMapper.writerWithDefaultPrettyPrinter()
@@ -370,7 +381,7 @@ class Worker extends Thread {
                                     }
 
                                     // send notification of contact to all contacts
-                                    contacts.stream().forEach(c -> _XSUB_SOCKET.send(c + "_" + "got-contact"));
+                                    contacts.stream().forEach(c -> _PUSH_SOCKET.send(c + "_" + "got-contact"));
 
                                     // remove user from the application
                                     this.userPositions.remove(new User(username, new Position()));
@@ -402,6 +413,10 @@ class Worker extends Thread {
                                 int nr_users = this.globalMap[posx][posy].getNumberOfUsers();
 
                                 String response = "OK_" + nr_users + "\n";
+
+                                System.out.println(
+                                        "RESPOSTA TOP --------------------------------------------\n " + response);
+                                System.out.println(this.globalMap[posx][posy].toString());
 
                                 socket_inproc.send(response);
                             } else {

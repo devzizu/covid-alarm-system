@@ -8,7 +8,9 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.List;
 
+import org.zeromq.SocketType;
 import org.zeromq.ZContext;
+import org.zeromq.ZMQ;
 
 import app.ConfigReader;
 import app.api.InfRatio;
@@ -20,18 +22,19 @@ public class Client {
     static ConfigReader config = new ConfigReader();
     static int PORT_FRONTEND = Integer.parseInt(config.getPort("ports", "FRONTEND"));
 
+    static FrontendReader FRONTEND_READER = null;
     static Notifications notificationThread = null;
     static DefaultAPI DefaultAPI = null;
     static DiretorioAPI DiretorioAPI = null;
 
     static User userLogged;
 
-    public static boolean recv_notifications(BufferedReader frontendSocketReader) throws IOException {
+    public static boolean recv_notifications(BufferedReader reader) throws IOException {
 
         // 1st request, block until it gets a notification socket
         System.out.println("[Client:app] Requesting notification socket...");
 
-        String msg = frontendSocketReader.readLine();
+        String msg = reader.readLine();
         String[] parts = msg.split("_");
 
         if (parts[0].equals("pub")) {
@@ -57,14 +60,15 @@ public class Client {
 
     public static void main(String[] args) {
 
-        try {
+        System.out.println("[Client:app] started...");
 
-            System.out.println("[Client:app] started...");
+        try (ZContext context = new ZContext(); ZMQ.Socket PULL_INPROC_SOCKET = context.createSocket(SocketType.PULL)) {
 
-            // Socket to talk with frontend
+            PULL_INPROC_SOCKET.bind("inproc://push_reader");
+
             Socket socket = new Socket("localhost", PORT_FRONTEND);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             PrintWriter writer = new PrintWriter(socket.getOutputStream());
+            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
             if (!socket.isConnected()) {
 
@@ -78,7 +82,9 @@ public class Client {
             // Request and start notification sub zmq socket
             boolean canReceiveNotifications = recv_notifications(reader);
 
-            DefaultAPI = new DefaultAPI(reader, writer, notificationThread);
+            FRONTEND_READER = new FrontendReader(context, socket, reader);
+
+            DefaultAPI = new DefaultAPI(PULL_INPROC_SOCKET, reader, writer, notificationThread);
             DiretorioAPI = new DiretorioAPI();
 
             if (!canReceiveNotifications) {
@@ -148,6 +154,9 @@ public class Client {
                             } while (readPosition == null);
 
                             GUI.success("OK:position_syntax_valid");
+
+                            FRONTEND_READER.setUsername(username);
+                            FRONTEND_READER.start();
 
                             response = DefaultAPI.register_backend(username, readPosition.getPosX(),
                                     readPosition.getPosY());
@@ -238,11 +247,11 @@ public class Client {
             socket.close();
 
         } catch (Exception e) {
-
-            e.printStackTrace();
+            System.out.println(e.getMessage());
+            // e.printStackTrace();
         }
 
-        System.out.println("[Client:frontend] app stoped...");
+        System.out.println("[Client] app stoped...");
     }
 
     public static void process_operations(BufferedReader stdIn, User user) throws Exception {

@@ -37,4 +37,10 @@ public class UsersInPosition {
     public void setSentLimit(boolean sl) {
         this.SENT_LIMIT_NOTIFICATION = sl;
     }
+
+    @Override
+    public String toString() {
+        return "{" + " USERS_IN_POSITION='" + getUsersInPosition() + "'}";
+    }
+
 }

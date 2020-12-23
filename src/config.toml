@@ -7,6 +7,7 @@
 "DIRETORIO_RESOURCE"    = "http://localhost:8080/districts"   #fixed
 [ports]
 "FRONTEND"              = 10000 #fixed port
+"FRONTEND_PULL"         = 10001 #fixed port
 "CENTRAL_SERVER_REP"    = 10100 #fixed port
 "LAYER1_BROKER"         = 10200 #dynamic port
 "LAYER2_BROKER"         = 10300 #dynamic port

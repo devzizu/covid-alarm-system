@@ -1,8 +1,6 @@
 -module(frontend).
 
--export([acceptor/2,
-         handle_requests_req/3,
-         start_frontend/0]).
+-export([acceptor/2, handle_requests_req/3, start_frontend/0, handle_private_notifications/1]).
 
 -define(CONFIG_FILE, "../config.toml").
 
@@ -14,9 +12,14 @@ start_frontend() ->
     {integer, FE_PORT} = toml:get_value(["ports"],
                                         "FRONTEND",
                                         Configuration),
+    {integer, FE_PULL} = toml:get_value(["ports"],
+                                        "FRONTEND_PULL",
+                                        Configuration),
+    io:format("Frontend is listenning on port (tcp): ~p.~n", [FE_PORT]),
+    SocketPull = zeromq_servers:start_pull(FE_PULL),
     % bind listen port to the frontend server
-    io:format("Frontend is listenning on port: ~p.~n",
-              [FE_PORT]),
+    io:format("Frontend is listenning on port (pull): ~p.~n",
+              [FE_PULL]), 
     {ok, LSock} = gen_tcp:listen(FE_PORT,
                                  [{active, once},
                                   {packet, line},
@@ -25,10 +28,21 @@ start_frontend() ->
     application:start(chumak),
     % start login manager
     login_manager:start(),
-    io:format("Login manager and Chumak zeromq started.~n",
-              []),
+    io:format("Login manager and Chumak zeromq started.~n", []),
     spawn(fun () -> acceptor(LSock, Configuration) end),
+    handle_private_notifications(SocketPull),
     ok.
+
+handle_private_notifications(SocketPull) ->
+    {ok, Data} = chumak:recv(SocketPull),
+    MsgAux = binary:bin_to_list(Data, {0, byte_size(Data)}),
+    [Username|_] = string:tokens(MsgAux,"_\r\n"),
+    {ok, SocketClient} = login_manager:get_socket(Username),
+    io:format("\t[~s] private notification: ~s for socket: ~p~n", [Username, MsgAux, SocketClient]),
+    %...ver qual é o user e buscar o socket
+    SendMessage = lists:flatten(io_lib:format("~s~n", [MsgAux])),
+    gen_tcp:send(SocketClient, SendMessage),
+    handle_private_notifications(SocketPull).
 
 acceptor(LSock, Configuration) ->
     {ok, ClientSocket} = gen_tcp:accept(LSock),
@@ -65,6 +79,24 @@ acceptor(LSock, Configuration) ->
         {error} -> io:format("\tCannot start servers!~n", [])
     end.
 
+handle_requests_req(ClientSocket, Socket_Req, Username) ->
+    receive
+        % mandar servidores destritais zeromq
+        {tcp, _, OperationData} ->
+            inet:setopts(ClientSocket, [{active, once}]),
+            io:format("Sending operation to backend: ~p~n",
+                      [OperationData]),
+            chumak:send(Socket_Req, OperationData),
+            {ok, RecMessage} = chumak:recv(Socket_Req),
+            gen_tcp:send(ClientSocket, RecMessage),
+            handle_requests_req(ClientSocket, Socket_Req, Username);
+        % logout
+        {tcp_closed, _} -> io:format("~s~n", ["closed"]);
+        % logout
+        {tcp_error, _, _} -> io:format("~s~n", ["error"])
+    end.
+
+
 enter_app(Socket) ->
     receive
         {tcp, _, Data} ->
@@ -74,7 +106,7 @@ enter_app(Socket) ->
                 % [login, <user>, <pass>]
                 3 ->
                     ["login", Username, Password] = Tokens,
-                    case login_manager:login(Username, Password) of
+                    case login_manager:login(Username, Password, Socket) of
                         {ok} -> UserLogged = {ok, Username};
                         _ -> UserLogged = {null, invalid}
                     end;
@@ -97,22 +129,4 @@ enter_app(Socket) ->
     case UserLogged of
         {null, _} -> enter_app(Socket);
         {ok, _} -> UserLogged
-    end.
-
-handle_requests_req(ClientSocket, Socket_Req,
-                    Username) ->
-    receive
-        % mandar servidores destritais zeromq
-        {tcp, _, OperationData} ->
-            inet:setopts(ClientSocket, [{active, once}]),
-            io:format("Sending operation to backend: ~p~n",
-                      [OperationData]),
-            chumak:send(Socket_Req, OperationData),
-            {ok, RecMessage} = chumak:recv(Socket_Req),
-            gen_tcp:send(ClientSocket, RecMessage),
-            handle_requests_req(ClientSocket, Socket_Req, Username);
-        % logout
-        {tcp_closed, _} -> io:format("~s~n", ["closed"]);
-        % logout
-        {tcp_error, _, _} -> io:format("~s~n", ["error"])
     end.

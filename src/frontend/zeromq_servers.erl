@@ -1,5 +1,5 @@
 -module(zeromq_servers).
--export([request_pub_notification_central/2 ,request_district_router_central/3,start_zeromq_rep_central/1, start_zeromq_rep_district/2]).
+-export([request_pub_notification_central/2 ,request_district_router_central/3,start_zeromq_rep_central/1, start_zeromq_rep_district/2, start_pull/1]).
 
 request_pub_notification_central(ClientSocket, Socket) ->
     io:format("\t[Init] Requesting to central server: init_pub~n"),    
@@ -67,5 +67,17 @@ start_zeromq_rep_central(CS_PORT) ->
             io:format("[~s] Connection Failed for this reason: ~p\n", [Username, Reason]);
         X ->
             io:format("[~s] Unhandled reply for bind ~p\n", [Username, X])
+    end,
+    Socket.
+
+start_pull(PULL_PORT) ->
+    {ok, Socket} = chumak:socket(pull),
+    case chumak:bind(Socket, tcp, "localhost", PULL_PORT) of
+        {ok, _BindPid} ->
+            io:format("Binding OK with Pid: ~p\n", [Socket]);
+        {error, Reason} ->
+            io:format("Connection Failed for this reason: ~p\n", [Reason]);
+        X ->
+            io:format("Unhandled reply for bind ~p \n", [X])
     end,
     Socket.

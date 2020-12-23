@@ -1,5 +1,5 @@
 -module(login_manager).
--export([start/0, create_account/3, close_account/2, login/2, rpc/1, loop/1, get_residencia/1]).
+-export([start/0, create_account/3, close_account/2, login/3, rpc/1, loop/1, get_residencia/1, get_socket/1]).
 
 %MAP -> {[key = Username], [value = {password, is_logged ?, Residencia}]
 
@@ -15,17 +15,17 @@ loop(Accounts) ->
 		 case maps:find(Username, Accounts) of
 		 	error -> 
 				From ! {ok}, 
-				loop(maps:put(Username, {Passwd, false, Residencia}, Accounts)); 
+				loop(maps:put(Username, {Passwd, false, Residencia, null}, Accounts)); 
 		 	_ ->
 				From ! {user_exists}, 
 				loop(Accounts)
 		 end;
 
-		 {{login, Username, Passwd}, From} ->
+		 {{login, Username, Passwd, Socket}, From} ->
 			case maps:find(Username, Accounts) of
-				{ok, {Passwd,false,Residencia}} ->
+				{ok, {Passwd,false,Residencia, _}} ->
 					From ! {ok},
-					loop(maps:update(Username, {Passwd, true, Residencia}, Accounts));
+					loop(maps:update(Username, {Passwd, true, Residencia, Socket}, Accounts));
 				_ ->
 					From ! {invalid}, 
 					loop(Accounts)
@@ -42,8 +42,16 @@ loop(Accounts) ->
 			end;
 		{{get_residencia, Username}, From} -> 
 			case maps:find(Username, Accounts) of
-				{ok, {_, true, Residencia}} ->
+				{ok, {_, true, Residencia,_}} ->
 					From ! {ok, Residencia};
+				_-> 
+					From ! {invalid}
+			end,
+			loop(Accounts);
+		{{get_socket, Username}, From} -> 
+			case maps:find(Username, Accounts) of
+				{ok, {_, true, _, S}} ->
+					From ! {ok, S};
 				_-> 
 					From ! {invalid}
 			end,
@@ -62,4 +70,6 @@ create_account(Username, Passwd, Residencia)-> rpc({create_account, Username, Pa
 
 close_account(Username, Passwd)-> rpc({close_account, Username, Passwd}).
 
-login(Username, Passwd)-> rpc({login, Username, Passwd}).
+login(Username, Passwd, Socket)-> rpc({login, Username, Passwd, Socket}).
+
+get_socket(Username) -> rpc({get_socket, Username}).
