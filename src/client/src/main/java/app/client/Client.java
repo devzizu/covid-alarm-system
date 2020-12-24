@@ -222,7 +222,22 @@ public class Client {
 
                         break;
 
+                    // unsubscribe
                     case 3:
+
+                        GUI.warning_no_nl("district: ");
+                        subscription = stdIn.readLine();
+
+                        response = DefaultAPI.unsubscribeDistrict(subscription);
+
+                        if (response.startsWith("OK"))
+                            GUI.success(response);
+                        else
+                            GUI.error(response);
+
+                        break;
+
+                    case 4:
 
                         process_diretorio(stdIn, false);
                         GUI.clear_terminal();
@@ -231,7 +246,7 @@ public class Client {
                         break;
 
                     // clear terminal
-                    case 4:
+                    case 5:
                         GUI.clear_terminal();
                         GUI.main_menu("startup", null, DefaultAPI, false);
                         continue;
@@ -296,8 +311,21 @@ public class Client {
 
                     break;
 
-                // update position
                 case 1:
+                    GUI.warning_no_nl("district: ");
+                    subscription = stdIn.readLine();
+
+                    response = DefaultAPI.unsubscribeDistrict(subscription);
+
+                    if (response.startsWith("OK"))
+                        GUI.success(response);
+                    else
+                        GUI.error(response);
+
+                    break;
+
+                // update position
+                case 2:
 
                     GUI.warning_no_nl("position (ex.: 5 10): ");
                     position = stdIn.readLine();
@@ -326,7 +354,7 @@ public class Client {
                     break;
 
                 // report infection
-                case 2:
+                case 3:
 
                     GUI.warning_nl("reporting infection...");
 
@@ -351,7 +379,7 @@ public class Client {
                     break;
 
                 // number of users in location
-                case 3:
+                case 4:
 
                     GUI.warning_no_nl("position (ex.: 5 10): ");
                     position = stdIn.readLine();
@@ -374,7 +402,7 @@ public class Client {
                     break;
 
                 // diretorio
-                case 4:
+                case 5:
 
                     process_diretorio(stdIn, false);
 
@@ -383,7 +411,7 @@ public class Client {
                     break;
 
                 // clear terminal
-                case 5:
+                case 6:
 
                     GUI.clear_terminal();
                     GUI.main_menu("operations", user, DefaultAPI, false);
@@ -635,8 +663,21 @@ public class Client {
 
                     break;
 
-                // diretorio
                 case 1:
+                    GUI.warning_no_nl("district: ");
+                    subscription = stdIn.readLine();
+
+                    response = DefaultAPI.unsubscribeDistrict(subscription);
+
+                    if (response.startsWith("OK"))
+                        GUI.success(response);
+                    else
+                        GUI.error(response);
+
+                    break;
+
+                // diretorio
+                case 2:
 
                     process_diretorio(stdIn, true);
 
@@ -646,7 +687,7 @@ public class Client {
                     break;
 
                 // clear terminal
-                case 2:
+                case 3:
 
                     GUI.clear_terminal();
                     GUI.main_menu("infected", null, DefaultAPI, true);

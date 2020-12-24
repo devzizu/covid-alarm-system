@@ -113,6 +113,31 @@ public class DefaultAPI {
         return sb_reply.toString();
     }
 
+    public String unsubscribeDistrict(String district) {
+
+        StringBuilder sb_reply = new StringBuilder();
+
+        if (this.subscriptions.size() > 0) {
+
+            String sanitezed = Character.toUpperCase(district.charAt(0)) + district.substring(1).toLowerCase();
+
+            if (this.subscriptions.contains(sanitezed)) {
+
+                sb_reply.append("OK:done");
+                this.subscriptions.remove(sanitezed);
+                this.notificationsThread.unsubscribe(sanitezed);
+
+            } else {
+
+                sb_reply.append("no_subscriptions_match");
+            }
+
+        } else
+            sb_reply.append("no_subscriptions_available");
+
+        return sb_reply.toString();
+    }
+
     public String subscribeDistrict(String district) {
 
         StringBuilder sb_reply = new StringBuilder();

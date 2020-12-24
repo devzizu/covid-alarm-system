@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import app.api.InfRatio;
 import app.client.DefaultAPI;
 import app.client.User;
 
@@ -36,17 +35,17 @@ public class GUI {
     // --------------------------------------------------------------------------
 
     private static List<String> STARTUP_OPTIONS = new ArrayList<>(
-            Arrays.asList("login", "register", "subscribe", "diretorio", "clear terminal"));
+            Arrays.asList("login", "register", "subscribe", "unsubscribe", "diretorio", "clear terminal"));
 
-    private static List<String> OPERATIONS_OPTIONS = new ArrayList<>(Arrays.asList("subscribe", "update position",
-            "report infection", "number of users in location", "diretorio", "clear terminal"));
+    private static List<String> OPERATIONS_OPTIONS = new ArrayList<>(Arrays.asList("subscribe", "unsubscribe",
+            "update position", "report infection", "number of users in location", "diretorio", "clear terminal"));
 
     private static List<String> DIRETORIO_OPTIONS = new ArrayList<>(
             Arrays.asList("number of users", "number of infected users", "top 5 districts (infected ratio)",
                     "top 5 districts (number of users)", "users contact average", "clear terminal", "< back"));
 
     private static List<String> INFECTED_OPTIONS = new ArrayList<>(
-            Arrays.asList("subscribe", "diretorio", "clear terminal"));
+            Arrays.asList("subscribe", "unsubscribe", "diretorio", "clear terminal"));
 
     // --------------------------------------------------------------------------
 
