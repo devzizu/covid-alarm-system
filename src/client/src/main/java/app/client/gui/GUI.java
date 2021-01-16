@@ -42,7 +42,7 @@ public class GUI {
 
     private static List<String> DIRETORIO_OPTIONS = new ArrayList<>(
             Arrays.asList("number of users", "number of infected users", "top 5 districts (infected ratio)",
-                    "top 5 districts (number of users)", "users contact average", "clear terminal", "< back"));
+                    "top 5 positions (number of users)", "users contact average", "clear terminal", "< back"));
 
     private static List<String> INFECTED_OPTIONS = new ArrayList<>(
             Arrays.asList("subscribe", "unsubscribe", "diretorio", "clear terminal"));

@@ -105,4 +105,8 @@ public class Distrito implements Comparable<Distrito> {
         return (nContact / nUsers);
     }
 
+    public int getNUsers() {
+        return users.size();
+    }
+
 }

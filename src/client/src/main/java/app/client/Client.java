@@ -555,15 +555,15 @@ public class Client {
 
                     List<Top5Positions> top5Locations = DiretorioAPI.getTop5Locations();
 
-                    if (top5Locations.isEmpty()) {
-
-                        GUI.success("there result is an empty list.");
-                        break;
-                    }
-
                     if (top5Locations == null) {
 
                         GUI.error("could_not_make_request");
+                        break;
+
+                    } else if (top5Locations.isEmpty()) {
+
+                        GUI.success("there result is an empty list.");
+                        break;
 
                     } else {
                         int topIndex = 1;

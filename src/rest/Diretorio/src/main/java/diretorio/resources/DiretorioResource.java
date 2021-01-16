@@ -1,9 +1,8 @@
 package diretorio.resources;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.GET;
@@ -29,11 +28,11 @@ import diretorio.dataTypes.*;
 public class DiretorioResource {
 
     // private final String template;
-    private volatile Map<String, Distrito> distritos;
+    private volatile ConcurrentHashMap<String, Distrito> distritos;
 
     public DiretorioResource(String template, List<String> districts) {
         // this.template = template;
-        this.distritos = new HashMap<>();
+        this.distritos = new ConcurrentHashMap<>();
         for (String d : districts) {
             distritos.put(d, new Distrito(d));
         }
@@ -135,6 +134,8 @@ public class DiretorioResource {
     @GET
     @Path("/users")
     public Response nUsers(@QueryParam("district") String distrito) {
+        if (distrito == null)
+            return Response.status(400).build();
         Distrito d = distritos.get(distrito);
         if (d == null)
             return Response.status(400).build();
@@ -152,6 +153,8 @@ public class DiretorioResource {
     @GET
     @Path("/infectedUsers")
     public Response infectedUsers(@QueryParam("district") String distrito) {
+        if (distrito == null)
+            return Response.status(400).build();
         Distrito d = distritos.get(distrito);
         if (d == null)
             return Response.status(400).build();
@@ -168,8 +171,10 @@ public class DiretorioResource {
     @GET
     @Path("/contactAvg")
     public Response contact() {
-        return Response
-                .ok(new ContactAvg(this.distritos.values().stream().mapToDouble(e -> e.mediaContactos()).sum() / 18.0))
+
+        double nUsers = this.distritos.values().stream().mapToDouble(e -> e.getNUsers()).sum();
+        return Response.ok(new ContactAvg(
+                nUsers == 0 ? 0.0 : (this.distritos.values().stream().mapToDouble(e -> e.nContact).sum() / nUsers)))
                 .build();
     }
 
