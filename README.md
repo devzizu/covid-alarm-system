@@ -12,7 +12,7 @@ Alarme Covid - Rastreio de contactos e deteção de concentrações de pessoas.
 | [Paulo Araújo](https://github.com/paulob122) | A85729 |
 | [Alexandre Miranda](https://github.com/aemiranda7) | A84462 |
 | [Alexandre Ferreira]() | A84961 |
-| [Miguel Cardoso]() | A85315 |
+| [Miguel Cardoso](https://github.com/miguelcardosop) | A85315 |
 
 <br>
 
