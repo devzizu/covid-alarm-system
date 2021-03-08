@@ -16,4 +16,4 @@ Alarme Covid - Rastreio de contactos e deteção de concentrações de pessoas.
 
 <br>
 
->**University of Minho, Software Engineering Masters (4rd year)**
+>**University of Minho, Software Engineering (4rd year)**
